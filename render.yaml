@@ -1,0 +1,49 @@
+databases:
+  - name: couture-postgres
+    databaseName: couture_catalog
+    user: couture
+    plan: basic-256mb
+
+services:
+  - type: web
+    name: couture-document-api
+    runtime: docker
+    plan: starter
+    healthCheckPath: /health
+    disk:
+      name: couture-media
+      mountPath: /app/media/uploads
+      sizeGB: 1
+    envVars:
+      - key: APP_NAME
+        value: Couture Document API
+      - key: DEBUG
+        value: false
+      - key: API_V1_PREFIX
+        value: /api/v1
+      - key: DATABASE_URL
+        fromDatabase:
+          name: couture-postgres
+          property: connectionString
+      - key: BACKEND_CORS_ORIGINS
+        sync: false
+      - key: SECRET_KEY
+        generateValue: true
+      - key: ACCESS_TOKEN_EXPIRE_MINUTES
+        value: 60
+      - key: DEFAULT_ADMIN_EMAIL
+        sync: false
+      - key: DEFAULT_ADMIN_PASSWORD
+        sync: false
+      - key: DEFAULT_ADMIN_FIRST_NAME
+        sync: false
+      - key: DEFAULT_ADMIN_LAST_NAME
+        sync: false
+      - key: MEDIA_STORAGE_DIR
+        value: /app/media/uploads
+      - key: MEDIA_BASE_URL
+        value: /media/uploads
+      - key: MAX_UPLOAD_SIZE_MB
+        value: 5
+      - key: ALLOWED_IMAGE_EXTENSIONS
+        value: '[".jpg",".jpeg",".png",".webp"]'

@@ -1,0 +1,47 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  min-height: 100vh;
+  background:
+    linear-gradient(135deg, rgba(255, 252, 248, 0.98), rgba(255, 247, 240, 0.96)),
+    radial-gradient(circle at top left, rgba(233, 184, 175, 0.14), transparent 34%);
+  color: #3e3432;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+*:focus-visible {
+  outline: 3px solid rgba(142, 79, 88, 0.45);
+  outline-offset: 3px;
+}
+
+.soft-panel {
+  @apply rounded-lg border border-rosewood/10 bg-white/90 shadow-soft backdrop-blur;
+}
+
+.field {
+  @apply w-full rounded-lg border border-rosewood/15 bg-white px-4 py-3 text-base text-ink placeholder:text-stone-400 transition focus:border-rosewood focus:ring-4 focus:ring-blush/25;
+}
+
+.label {
+  @apply mb-2 block text-sm font-semibold text-ink;
+}
+
+.help-text {
+  @apply mt-2 text-sm leading-6 text-stone-600;
+}

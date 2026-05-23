@@ -1,0 +1,798 @@
+DOCUMENTATION TECHNIQUE DU PROJET
+=================================
+
+Projet : Couture Document API
+Objectif : API REST moderne et evolutive pour gerer un catalogue documentaire specialise couture.
+
+REGLE DE MAINTENANCE OBLIGATOIRE
+--------------------------------
+
+Ce fichier doit etre mis a jour a chaque modification du projet.
+
+A chaque ajout, modification ou suppression de code, documenter ici :
+- ce qui a change ;
+- dans quel fichier ;
+- quelle technologie est concernee ;
+- a quoi sert la modification ;
+- si la modification impacte les commandes, la configuration, la base de donnees, les routes ou les tests.
+
+
+STACK TECHNIQUE
+---------------
+
+Python 3.12+
+- Langage backend principal.
+
+FastAPI
+- Framework HTTP.
+- Expose les routes REST, Swagger /docs, ReDoc /redoc et l'injection de dependances.
+
+PostgreSQL
+- Base relationnelle principale.
+- Utilisee avec UUID, enums et listes PostgreSQL.
+
+SQLAlchemy 2.x async
+- ORM moderne.
+- Utilise AsyncSession, mapped_column, Mapped et create_async_engine.
+
+Pydantic v2
+- Validation des entrees/sorties API.
+- Utilise BaseModel, field_validator et model_validator.
+
+pydantic-settings
+- Configuration par variables d'environnement.
+
+Alembic
+- Migrations de schema de base de donnees.
+
+Docker / Docker Compose
+- Lance l'API et PostgreSQL.
+
+pytest / httpx
+- Tests automatises async de l'API.
+
+Ruff
+- Controle qualite et imports.
+
+
+ARCHITECTURE GENERALE
+---------------------
+
+app/main.py
+- Cree l'application FastAPI.
+- Configure CORS.
+- Branche les routes /api/v1.
+- Monte le dossier media local sur MEDIA_BASE_URL.
+- Expose /health.
+- Lance le seed du compte administrateur par defaut au demarrage.
+
+app/api/v1/router.py
+- Assemble les routes de la version 1 :
+  - auth
+  - books
+  - upload
+  - users
+
+app/core/config.py
+- Charge les variables d'environnement.
+- Variables principales :
+  - APP_NAME
+  - DEBUG
+  - API_V1_PREFIX
+  - DATABASE_URL
+  - BACKEND_CORS_ORIGINS
+  - SECRET_KEY
+  - ACCESS_TOKEN_EXPIRE_MINUTES
+  - DEFAULT_ADMIN_EMAIL
+  - DEFAULT_ADMIN_PASSWORD
+  - DEFAULT_ADMIN_FIRST_NAME
+  - DEFAULT_ADMIN_LAST_NAME
+  - MEDIA_STORAGE_DIR
+  - MEDIA_BASE_URL
+  - MAX_UPLOAD_SIZE_MB
+  - ALLOWED_IMAGE_EXTENSIONS
+
+app/core/enums.py
+- Enums Python partages par Pydantic et SQLAlchemy.
+- DifficultyLevel :
+  - beginner
+  - intermediate
+  - advanced
+- TargetAudience :
+  - women
+  - men
+  - children
+  - baby
+  - plus_size
+- MainCategory :
+  - clothing
+  - accessories
+  - technique
+  - patternmaking
+  - embroidery
+  - patchwork
+  - upcycling
+  - alterations
+- ProjectType :
+  - dress
+  - skirt
+  - top
+  - pants
+  - jacket
+  - coat
+  - bag
+  - pouch
+  - hair_accessories
+  - textile_decoration
+- Technique :
+  - jersey
+  - serger
+  - embroidery
+  - patchwork
+  - alterations
+  - patternmaking
+- DocumentStatus :
+  - draft
+  - pending_validation
+  - validated
+- UserRole :
+  - admin
+  - volunteer
+
+app/core/exceptions.py
+- Exceptions applicatives transformees en reponses HTTP propres.
+- Erreurs :
+  - AppError
+  - ResourceNotFoundError -> 404
+  - ConflictError -> 409
+  - UnauthorizedError -> 401
+  - ForbiddenError -> 403
+  - UnsupportedMediaTypeError -> 415
+  - PayloadTooLargeError -> 413
+
+app/core/security.py
+- Fonctions de securite auth.
+- Hash mot de passe : bcrypt.
+- Verification mot de passe.
+- Creation JWT HS256.
+- Verification JWT : signature, structure et expiration.
+- Compatibilite de verification avec les anciens hashes PBKDF2 de developpement.
+
+app/core/auth.py
+- Dependances FastAPI pour les routes privees.
+- Lit Authorization: Bearer <token>.
+- Charge l'utilisateur courant depuis le JWT.
+- Bloque les utilisateurs absents, inactifs ou non admin selon la route.
+
+
+BASE DE DONNEES
+---------------
+
+app/db/session.py
+- Configure SQLAlchemy async.
+- Cree engine et AsyncSessionLocal.
+- Fournit get_db_session pour FastAPI.
+
+app/db/base.py
+- Importe Base, Book et User.
+- Sert a Alembic pour detecter les metadata.
+
+app/db/types.py
+- Type StringList.
+- PostgreSQL : ARRAY(String).
+- Tests SQLite : JSON.
+
+app/db/enum_types.py
+- Type EnumList.
+- PostgreSQL : ARRAY(SQLAlchemy Enum).
+- Tests SQLite : JSON.
+- Sert aux champs metier couture listes et strictement valides cote API.
+
+
+MODELES SQLALCHEMY
+------------------
+
+app/models/mixins.py
+- Mixins reutilisables pour les futurs documents :
+  - UUIDPrimaryKeyMixin
+  - TimestampMixin
+  - BaseDocumentMixin
+  - ValidationWorkflowMixin
+- Objectif : eviter la duplication future entre books, magazines et patterns sans introduire de complexite excessive.
+
+app/models/book.py
+- Table : books.
+- Herite de BaseDocumentMixin et ValidationWorkflowMixin.
+- Champs historiques conserves :
+  - isbn
+  - title
+  - subtitle
+  - description
+  - authors
+  - publisher
+  - published_date
+  - page_count
+  - language
+  - cover_url
+  - categories
+  - tags
+  - created_at
+  - updated_at
+- Champs metier couture ajoutes :
+  - difficulty_levels
+  - target_audiences
+  - main_categories
+  - project_types
+  - techniques
+  - includes_patterns
+- Champs workflow :
+  - status
+  - created_by
+  - validated_by
+  - validated_at
+- isbn et title sont maintenant nullable pour permettre les brouillons.
+
+app/models/user.py
+- Table : users.
+- Champs :
+  - id
+  - first_name
+  - last_name
+  - email
+  - hashed_password
+  - role
+  - is_active
+  - created_at
+- Roles :
+  - admin
+  - volunteer
+- Pas d'inscription publique.
+- Le compte administrateur par defaut est garanti au demarrage.
+
+
+SCHEMAS PYDANTIC
+----------------
+
+app/schemas/book.py
+- Schemas :
+  - BookBase
+  - BookCreate
+  - BookUpdate
+  - BookRead
+  - PaginatedBooks
+- Validations :
+  - ISBN 10/13 avec checksum
+  - URL cover_url
+  - listes nettoyees et dedupliquees
+  - enums stricts
+  - brouillon incomplet autorise
+  - hors draft, isbn/title/authors obligatoires
+
+app/schemas/user.py
+- Schemas :
+  - UserRead
+  - UserCreateByAdmin
+  - LoginRequest
+  - TokenResponse
+- Validation email simple sans dependance externe.
+- TokenResponse retourne le JWT et l'utilisateur connecte.
+
+
+REPOSITORIES
+------------
+
+app/repositories/book_repository.py
+- Acces donnees Books.
+- Fonctions :
+  - list
+  - get
+  - get_by_isbn
+  - create
+  - update
+  - delete
+  - search
+- Recherche simple actuelle sur :
+  - title
+  - authors
+  - tags
+  - categories
+  - main_categories
+  - project_types
+  - techniques
+- Structure prete pour evoluer vers PostgreSQL full-text search et filtres metier.
+
+app/repositories/user_repository.py
+- Acces donnees Users.
+- Fonctions :
+  - get
+  - get_by_email
+  - admin_exists
+  - list
+  - create
+
+
+SERVICES
+--------
+
+app/services/book_service.py
+- Logique metier Books.
+- Gere :
+  - pagination
+  - creation
+  - mise a jour
+  - suppression
+  - recherche
+  - conflit ISBN
+  - statut draft / pending_validation / validated
+  - validation automatique validated_at si passage a validated
+  - transactions commit/rollback
+
+app/services/auth_service.py
+- Logique login.
+- Verifie utilisateur actif et mot de passe.
+- Retourne un JWT et l'utilisateur connecte.
+
+app/services/admin_seed.py
+- Garantit le compte administrateur par defaut au demarrage.
+- Email par defaut : tania.rojasangele@gmail.com
+- Mot de passe par defaut : Admin123!
+- Si le compte existe deja, il est reactif, repasse admin et son mot de passe est rehache avec bcrypt.
+
+app/services/user_service.py
+- Logique admin Users.
+- Liste les comptes.
+- Cree les comptes avec mot de passe bcrypt.
+
+app/media/services/media_service.py
+- Service media local.
+- Fonction :
+  - save_cover
+- Valide :
+  - extension
+  - type image
+  - signature fichier
+  - taille max
+- Genere un nom unique.
+- Stocke dans MEDIA_STORAGE_DIR.
+- Retourne une URL MEDIA_BASE_URL.
+- Peut etre remplace plus tard par S3 ou Cloudinary.
+
+
+ROUTES API
+----------
+
+app/routes/books.py
+- Prefixe : /api/v1/books
+- Routes privees : JWT requis.
+- Endpoints :
+  - GET /
+  - GET /search?q=
+  - GET /{book_id}
+  - POST /
+  - PUT /{book_id}
+  - DELETE /{book_id}
+
+app/routes/auth.py
+- Prefixe : /api/v1/auth
+- Endpoints :
+  - POST /login
+  - GET /me
+
+app/routes/users.py
+- Prefixe : /api/v1/users
+- Routes reservees au role admin.
+- Endpoints :
+  - GET /
+  - POST /
+- Il n'y a pas d'inscription publique.
+
+app/routes/uploads.py
+- Prefixe : /api/v1/upload
+- Route privee : JWT requis.
+- Endpoint :
+  - POST /cover
+- Upload actuel via corps binaire brut :
+  - Header Content-Type : image/png, image/jpeg ou image/webp
+  - Header X-Filename : nom du fichier
+
+
+FRONTEND WEB
+------------
+
+frontend/
+- Application d'administration web BiblioCouture.
+- Stack :
+  - Next.js
+  - React
+  - TypeScript
+  - Tailwind CSS
+- Objectif UX :
+  - interface douce, chaleureuse et lisible ;
+  - inspiree couture / bibliotheque ;
+  - adaptee aux benevoles non techniques ;
+  - formulaire d'ajout de livre sur une seule page.
+
+frontend/package.json
+- Declare les dependances frontend :
+  - next
+  - react
+  - react-dom
+  - lucide-react
+  - typescript
+  - tailwindcss
+  - postcss
+  - autoprefixer
+  - eslint-config-next
+- Scripts :
+  - npm run dev
+  - npm run build
+  - npm run start
+  - npm run lint
+  - npm run typecheck
+
+frontend/.env.example
+- Variable principale :
+  - NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1
+
+frontend/src/styles/globals.css
+- Styles globaux Tailwind.
+- Theme visuel :
+  - creme
+  - rose poudre / rose action
+  - blanc casse
+  - bordures douces
+  - cartes legeres
+- Ajoute les classes reutilisables :
+  - soft-panel
+  - field
+  - label
+  - help-text
+
+frontend/src/layouts/AuthLayout.tsx
+- Layout des pages publiques :
+  - connexion
+  - mot de passe oublie
+- Integre une illustration locale couture/livres.
+
+frontend/src/layouts/AppLayout.tsx
+- Layout des pages privees.
+- Navigation simple :
+  - Accueil
+  - Livres
+  - Recherche
+  - Ajouter
+  - Profil
+  - Benevoles, admin uniquement
+  - Aide
+- Utilise le role JWT pour masquer la gestion benevoles aux non-admins.
+
+frontend/src/hooks/useAuth.ts
+- Lit le JWT stocke cote navigateur.
+- Decode le role et l'identifiant utilisateur.
+- Redirige vers /login si la session est absente.
+- Fournit :
+  - user
+  - loading
+  - isAdmin
+  - logout
+
+frontend/src/hooks/useAsyncState.ts
+- Hook reutilisable pour :
+  - loading
+  - error
+  - data
+  - execution d'appels async
+
+frontend/src/services/api.ts
+- Client HTTP central.
+- Ajoute Authorization: Bearer <token> si le JWT existe.
+- Gere les erreurs API avec messages simples.
+- Utilise par defaut /api/v1.
+
+frontend/src/services/auth.ts
+- Appels :
+  - POST /auth/login
+  - POST /auth/forgot-password
+- Stocke le JWT apres connexion.
+
+frontend/src/services/books.ts
+- Appels :
+  - GET /books
+  - GET /books/search
+  - GET /books/{id}
+  - POST /books
+  - PUT /books/{id}
+  - DELETE /books/{id}
+
+frontend/src/services/upload.ts
+- Appel :
+  - POST /upload/cover
+- Envoie l'image en corps binaire brut.
+- Ajoute les headers :
+  - Content-Type
+  - X-Filename
+- Convertit les URLs relatives /media/... en URL absolue pour compatibilite avec cover_url.
+
+frontend/src/services/users.ts
+- Appels prevus pour la gestion admin :
+  - GET /users
+  - POST /users
+  - PUT /users/{id}
+
+frontend/src/types/
+- Types TypeScript :
+  - Book
+  - BookPayload
+  - PaginatedBooks
+  - enums couture
+  - UserRole
+  - SessionUser
+  - Volunteer
+
+frontend/src/utils/bookOptions.ts
+- Centralise les libelles francais des options couture :
+  - niveaux presents dans le livre
+  - public concerne
+  - categories principales
+  - types de projets
+  - techniques
+
+frontend/src/components/books/BookForm.tsx
+- Formulaire principal d'ajout/modification de livre.
+- Page unique, sans multi-etapes.
+- Sections :
+  - 1. Informations principales
+  - 2. Informations couture
+  - 3. Description
+  - 4. Photo de la couverture
+- Gere :
+  - multiselection niveaux
+  - multiselection publics
+  - multiselection categories
+  - multiselection projets
+  - multiselection techniques
+  - champs Autre pour projets et techniques
+  - boutons radio patrons inclus
+  - notes complementaires repliables
+  - brouillon par defaut
+
+frontend/src/components/books/CoverUpload.tsx
+- Composant upload couverture.
+- Fonctions :
+  - choisir une image
+  - capture photo mobile via capture="environment"
+  - apercu image
+  - suppression image
+  - message rassurant
+
+frontend/src/pages/
+- Pages creees :
+  - /login
+  - /forgot-password
+  - /dashboard
+  - /books
+  - /books/search
+  - /books/add
+  - /books/[id]/edit
+  - /profile
+  - /volunteers
+  - /help
+
+
+WORKFLOW DOCUMENTAIRE
+---------------------
+
+draft
+- Brouillon.
+- Peut etre incomplet.
+- Sert aux benevoles qui commencent une fiche.
+
+pending_validation
+- Fiche prete pour relecture.
+- Requiert isbn, title et authors.
+
+validated
+- Fiche validee.
+- Requiert isbn, title et authors.
+- validated_at est renseigne automatiquement si absent.
+
+
+MIGRATIONS
+----------
+
+alembic/versions/202605230001_create_books_table.py
+- Cree la table books initiale.
+
+alembic/versions/202605230002_add_document_workflow_users_and_book_taxonomy.py
+- Cree les enums PostgreSQL.
+- Cree la table users.
+- Ajoute les champs couture au livre.
+- Ajoute le workflow documentaire.
+- Ajoute created_by, validated_by, validated_at.
+- Rend isbn et title nullable pour les brouillons.
+
+
+TESTS
+-----
+
+app/tests/test_books.py
+- CRUD Books.
+- Pagination.
+- ISBN invalide.
+- Enums invalides.
+- Brouillon incomplet.
+- Rejet pending_validation incomplet.
+- Recherche sur technique.
+- Passage a validated avec validated_at.
+
+app/tests/test_auth.py
+- Login reussi.
+- Login refuse si mot de passe invalide.
+- Seed du compte admin par defaut avec hash bcrypt verifie.
+
+app/tests/test_uploads.py
+- Upload couverture valide.
+- Rejet fichier non image.
+
+app/tests/conftest.py
+- Configure une base SQLite en memoire pour tests rapides.
+- Override get_db_session.
+- Cree un admin de test et ajoute un JWT aux appels de test des routes privees.
+
+
+COMMANDES UTILES
+----------------
+
+Lancer le projet :
+docker compose up --build
+
+Appliquer les migrations :
+docker compose exec api alembic upgrade head
+
+Creer une migration :
+docker compose exec api alembic revision --autogenerate -m "description"
+
+Lancer les tests :
+pytest
+
+Controle qualite :
+ruff check .
+
+Lancer le frontend :
+cd frontend
+npm install
+npm run dev
+
+Verifier le frontend :
+cd frontend
+npm run typecheck
+npm run build
+
+
+JOURNAL DES MODIFICATIONS
+-------------------------
+
+2026-05-23
+- Creation de la base projet FastAPI/PostgreSQL/SQLAlchemy/Pydantic/Alembic/Docker.
+- Ajout du CRUD Books initial.
+- Ajout recherche, pagination, validation ISBN, README et tests.
+- Ajout de DOCUMENTATION_TECHNIQUE_PROJET.txt comme journal technique obligatoire.
+
+2026-05-23
+- Evolution sans refonte de l'architecture documentaire.
+- Ajout de app/core/enums.py pour les enums metier couture, workflow documentaire et roles utilisateurs.
+- Ajout de app/models/mixins.py pour preparer une base commune aux futurs documents.
+- Evolution de app/models/book.py avec champs couture structures :
+  - difficulty_levels
+  - target_audiences
+  - main_categories
+  - project_types
+  - techniques
+  - includes_patterns
+  - status
+  - created_by
+  - validated_by
+  - validated_at
+- Conservation de categories et tags pour compatibilite.
+- Ajout de app/models/user.py pour le modele User minimal.
+- Ajout de app/core/security.py pour hash mot de passe et JWT simple.
+- Ajout de app/routes/auth.py, app/services/auth_service.py et app/repositories/user_repository.py.
+- Ajout de POST /api/v1/auth/login.
+- Ajout du module app/media/services/media_service.py.
+- Ajout de POST /api/v1/upload/cover.
+- Ajout du stockage local media/uploads.
+- Ajout de la migration Alembic 202605230002.
+- Mise a jour des schemas Pydantic Books et Users.
+- Mise a jour de la recherche simple Books pour les nouveaux champs metier.
+- Mise a jour des tests pytest : 14 tests passent.
+- Mise a jour du README.
+- Mise a jour complete de cette documentation technique.
+
+2026-05-23
+- Correction de la migration Alembic 202605230002.
+- Probleme corrige : les enums PostgreSQL etaient crees explicitement puis recrees automatiquement par SQLAlchemy pendant create_table.
+- Solution : creation explicite idempotente via DO $$ ... IF NOT EXISTS, puis reutilisation des enums avec create_type=False.
+- Ajout de .dockerignore pour exclure .venv, caches, egg-info et fichiers temporaires du contexte Docker.
+- Impact : docker compose up --build doit reconstruire plus vite et appliquer les migrations sans erreur DuplicateObjectError.
+
+2026-05-23
+- Ajout de l'authentification fonctionnelle backend et frontend.
+- Backend :
+  - bcrypt ajoute aux dependances.
+  - app/core/security.py utilise bcrypt pour les nouveaux hashes.
+  - app/core/auth.py ajoute les dependances get_current_user et require_admin.
+  - app/services/admin_seed.py garantit le compte admin tania.rojasangele@gmail.com au demarrage.
+  - app/routes/auth.py expose POST /login et GET /me.
+  - app/routes/users.py expose GET /users et POST /users, reserves admin.
+  - app/routes/books.py et app/routes/uploads.py sont protegees par JWT.
+- Frontend :
+  - frontend/src/contexts/AuthContext.tsx ajoute le contexte session.
+  - frontend/src/hooks/useAuth.ts utilise le contexte et gere la redirection login.
+  - frontend/src/middleware.ts protege les pages privees et /volunteers.
+  - frontend/src/services/api.ts stocke le JWT dans un cookie SameSite=Strict.
+  - frontend/src/pages/login.tsx appelle reellement l'API et redirige apres connexion.
+- Documentation :
+  - README.md et .env.example mis a jour avec les variables admin par defaut.
+- Tests :
+  - app/tests/conftest.py ajoute un admin JWT pour les routes privees.
+  - app/tests/test_auth.py verifie le seed admin bcrypt.
+  - 15 tests backend passent.
+
+2026-05-23
+- Ajout du frontend web complet BiblioCouture dans frontend/.
+- Creation d'une application Next.js / React / TypeScript / Tailwind CSS.
+- Creation de frontend/package.json, next.config.js, tsconfig.json, postcss.config.js, tailwind.config.ts.
+- Creation de frontend/.env.example avec NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1.
+- Creation de frontend/src/styles/globals.css pour le theme visuel doux inspire du mockup fourni.
+- Creation de frontend/public/illustrations/sewing-books.svg pour l'ambiance couture/bibliotheque.
+- Creation des layouts :
+  - frontend/src/layouts/AuthLayout.tsx
+  - frontend/src/layouts/AppLayout.tsx
+- Creation des hooks :
+  - frontend/src/hooks/useAuth.ts
+  - frontend/src/hooks/useAsyncState.ts
+- Creation des services API :
+  - frontend/src/services/api.ts
+  - frontend/src/services/auth.ts
+  - frontend/src/services/books.ts
+  - frontend/src/services/upload.ts
+  - frontend/src/services/users.ts
+- Creation des types :
+  - frontend/src/types/auth.ts
+  - frontend/src/types/book.ts
+- Creation des composants UI reutilisables :
+  - Button
+  - TextField
+  - TextArea
+  - SectionCard
+  - CheckboxGroup
+  - RadioCards
+  - Notice
+  - EmptyState
+- Creation des composants livres :
+  - BookForm
+  - BookCard
+  - CoverUpload
+- Creation des pages frontend demandees :
+  - connexion
+  - mot de passe oublie
+  - tableau de bord
+  - liste des livres
+  - recherche avec filtres
+  - ajout de livre en page unique
+  - modification de livre
+  - profil utilisateur
+  - gestion benevoles admin
+  - aide / support
+- Formulaire d'ajout livre conforme a la demande :
+  - une seule page
+  - sections visuelles claires
+  - multiselections couture
+  - champ Autre pour projets et techniques
+  - upload couverture vers POST /upload/cover
+  - notes complementaires repliables
+- Limite de verification :
+  - npm install n'a pas pu aboutir dans l'environnement local.
+  - Erreur reseau : ENOTFOUND registry.npmjs.org.
+  - Aucun node_modules ni package-lock.json n'a ete cree.
+  - Compilation Next.js et typecheck a relancer apres retablissement de l'acces npm.
