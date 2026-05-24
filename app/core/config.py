@@ -1,5 +1,5 @@
-from functools import lru_cache
 import json
+from functools import lru_cache
 from pathlib import Path
 
 from pydantic import AnyHttpUrl, Field, field_validator
@@ -14,6 +14,7 @@ class Settings(BaseSettings):
         default="postgresql+asyncpg://couture:couture@localhost:5432/couture_catalog"
     )
     BACKEND_CORS_ORIGINS: list[AnyHttpUrl | str] = []
+    BACKEND_CORS_ORIGIN_REGEX: str | None = None
     SECRET_KEY: str = "change-me-in-production"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
     DEFAULT_ADMIN_EMAIL: str = "tania.rojasangele@gmail.com"

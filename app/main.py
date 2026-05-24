@@ -9,6 +9,7 @@ from app.api.v1.router import api_router
 from app.core.config import settings
 from app.core.exceptions import register_exception_handlers
 from app.db.session import AsyncSessionLocal
+from app.routes.metadata import router as metadata_router
 from app.services.admin_seed import ensure_default_admin
 
 
@@ -33,12 +34,14 @@ def create_app() -> FastAPI:
     app.add_middleware(
         CORSMiddleware,
         allow_origins=[str(origin) for origin in settings.BACKEND_CORS_ORIGINS],
+        allow_origin_regex=settings.BACKEND_CORS_ORIGIN_REGEX,
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
     )
 
     register_exception_handlers(app)
+    app.include_router(metadata_router)
     app.include_router(api_router, prefix=settings.API_V1_PREFIX)
     settings.MEDIA_STORAGE_DIR.mkdir(parents=True, exist_ok=True)
     app.mount(

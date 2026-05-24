@@ -72,6 +72,11 @@ Media :
 
 - `POST /api/v1/upload/cover`
 
+Metadata publique pour l'application Flutter :
+
+- `POST /metadata`
+- `POST /api/v1/metadata`
+
 ## Workflow documentaire
 
 Les livres ont maintenant un statut documentaire :
@@ -194,6 +199,72 @@ Regles actuelles :
 - nom unique genere automatiquement
 - stockage local dans `media/uploads`
 - retour d'une URL de type `/media/uploads/{filename}`
+
+## Recherche metadata Flutter
+
+L'application Flutter peut utiliser l'URL publique HTTPS de l'endpoint metadata :
+
+```bash
+flutter run -d chrome --dart-define=LIBRARY_METADATA_API_URL=https://ton-api.example.com/metadata
+```
+
+ou, si vous preferez rester sous le prefixe versionne :
+
+```bash
+flutter run -d chrome --dart-define=LIBRARY_METADATA_API_URL=https://ton-api.example.com/api/v1/metadata
+```
+
+L'endpoint est public et ne demande pas de JWT. Il accepte :
+
+```json
+{
+  "type": "livre",
+  "isbn": "978..."
+}
+```
+
+```json
+{
+  "type": "magazine",
+  "ean": "..."
+}
+```
+
+```json
+{
+  "type": "magazine",
+  "title": "Burda",
+  "dateNumero": "2024"
+}
+```
+
+Quand un livre est trouve dans le catalogue par ISBN, la reponse est :
+
+```json
+{
+  "title": "Titre",
+  "authors": ["Auteur 1"],
+  "publisher": "Editeur",
+  "description": "Resume",
+  "coverUrl": "https://..."
+}
+```
+
+Si aucune metadata n'est trouvee, l'API repond `204 No Content`.
+
+Pour Flutter Web, Render doit autoriser l'origine de l'application dans la configuration CORS.
+En developpement local avec un port Flutter variable, vous pouvez configurer :
+
+```text
+BACKEND_CORS_ORIGIN_REGEX=^https?://(localhost|127\.0\.0\.1)(:[0-9]+)?$
+```
+
+En production, ajoutez aussi l'origine exacte de l'application web dans `BACKEND_CORS_ORIGINS`,
+par exemple :
+
+```text
+BACKEND_CORS_ORIGINS=https://ton-app.example.com
+```
 
 ## Structure
 
