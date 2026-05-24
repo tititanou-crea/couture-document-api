@@ -47,7 +47,7 @@ export function CoverUpload({ value, onChange }: CoverUploadProps) {
         {upload.error ? <Notice type="error">{upload.error}</Notice> : null}
 
         <div className="flex flex-wrap gap-3">
-          <label className="inline-flex min-h-12 cursor-pointer items-center justify-center gap-2 rounded-lg bg-rosewood px-5 py-3 text-base font-semibold text-white transition hover:bg-[#7c424b]">
+          <label className="inline-flex min-h-12 cursor-pointer items-center justify-center gap-2 rounded-lg bg-rosewood px-5 py-3 text-base font-semibold text-white transition hover:bg-[#7c424b] md:hidden">
             <Camera aria-hidden size={20} />
             Prendre une photo
             <input
@@ -59,9 +59,20 @@ export function CoverUpload({ value, onChange }: CoverUploadProps) {
             />
           </label>
 
-          <label className="inline-flex min-h-12 cursor-pointer items-center justify-center gap-2 rounded-lg border border-rosewood/25 bg-white px-5 py-3 text-base font-semibold text-rosewood transition hover:bg-[#fff2f5]">
+          <label className="inline-flex min-h-12 cursor-pointer items-center justify-center gap-2 rounded-lg border border-rosewood/25 bg-white px-5 py-3 text-base font-semibold text-rosewood transition hover:bg-[#fff2f5] md:hidden">
             <ImagePlus aria-hidden size={20} />
             Choisir dans les photos
+            <input
+              type="file"
+              accept="image/png,image/jpeg,image/webp"
+              className="sr-only"
+              onChange={handleInputChange}
+            />
+          </label>
+
+          <label className="hidden min-h-12 cursor-pointer items-center justify-center gap-2 rounded-lg bg-rosewood px-5 py-3 text-base font-semibold text-white transition hover:bg-[#7c424b] md:inline-flex">
+            <ImagePlus aria-hidden size={20} />
+            Ajouter une photo
             <input
               type="file"
               accept="image/png,image/jpeg,image/webp"
