@@ -1,3 +1,4 @@
+import type { ChangeEvent } from "react";
 import { Camera, ImagePlus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Notice } from "@/components/ui/Notice";
@@ -12,10 +13,16 @@ type CoverUploadProps = {
 export function CoverUpload({ value, onChange }: CoverUploadProps) {
   const upload = useAsyncState<{ url: string }>();
 
-  async function handleFile(file?: File) {
+  async function handleFile(file?: File | null) {
     if (!file) return;
     const result = await upload.run(() => uploadCover(file));
     onChange(result.url);
+  }
+
+  async function handleInputChange(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0] ?? null;
+    event.target.value = "";
+    await handleFile(file);
   }
 
   return (
@@ -34,7 +41,7 @@ export function CoverUpload({ value, onChange }: CoverUploadProps) {
 
       <div className="space-y-4">
         <Notice>
-          Sur téléphone, le bouton peut ouvrir l’appareil photo. Choisissez une image bien éclairée, la couverture entière si possible.
+          Sur téléphone, vous pouvez prendre une nouvelle photo ou choisir une image déjà présente dans votre galerie.
         </Notice>
 
         {upload.error ? <Notice type="error">{upload.error}</Notice> : null}
@@ -42,13 +49,24 @@ export function CoverUpload({ value, onChange }: CoverUploadProps) {
         <div className="flex flex-wrap gap-3">
           <label className="inline-flex min-h-12 cursor-pointer items-center justify-center gap-2 rounded-lg bg-rosewood px-5 py-3 text-base font-semibold text-white transition hover:bg-[#7c424b]">
             <Camera aria-hidden size={20} />
-            Ajouter une photo
+            Prendre une photo
             <input
               type="file"
               accept="image/png,image/jpeg,image/webp"
               capture="environment"
               className="sr-only"
-              onChange={(event) => handleFile(event.target.files?.[0])}
+              onChange={handleInputChange}
+            />
+          </label>
+
+          <label className="inline-flex min-h-12 cursor-pointer items-center justify-center gap-2 rounded-lg border border-rosewood/25 bg-white px-5 py-3 text-base font-semibold text-rosewood transition hover:bg-[#fff2f5]">
+            <ImagePlus aria-hidden size={20} />
+            Choisir dans les photos
+            <input
+              type="file"
+              accept="image/png,image/jpeg,image/webp"
+              className="sr-only"
+              onChange={handleInputChange}
             />
           </label>
 
