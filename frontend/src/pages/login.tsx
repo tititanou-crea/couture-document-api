@@ -21,8 +21,7 @@ export default function LoginPage() {
     setError(null);
     try {
       await login({ email, password });
-      const next = typeof router.query.next === "string" ? router.query.next : "/dashboard";
-      router.replace(next.startsWith("/") ? next : "/dashboard");
+      window.location.assign(getRedirectTarget(router.query.next));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Connexion impossible.");
     } finally {
@@ -42,4 +41,11 @@ export default function LoginPage() {
       </form>
     </AuthLayout>
   );
+}
+
+function getRedirectTarget(next: string | string[] | undefined) {
+  if (typeof next !== "string") return "/dashboard";
+  if (!next.startsWith("/") || next.startsWith("//")) return "/dashboard";
+  if (next === "/" || next.startsWith("/login")) return "/dashboard";
+  return next;
 }
