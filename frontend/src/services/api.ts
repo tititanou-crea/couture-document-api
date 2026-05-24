@@ -1,4 +1,8 @@
-export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1";
+import { decodeJwtPayload } from "@/utils/jwt";
+
+export const API_URL =
+  process.env.NEXT_PUBLIC_API_URL ??
+  (process.env.NODE_ENV === "development" ? "http://localhost:8000/api/v1" : "");
 export const API_ORIGIN = API_URL.replace(/\/api\/v\d+\/?$/, "");
 export const TOKEN_COOKIE = "bibliocouture_token";
 
@@ -25,6 +29,12 @@ type RequestOptions = RequestInit & {
 };
 
 export async function apiRequest<T>(path: string, options: RequestOptions = {}): Promise<T> {
+  if (!API_URL) {
+    throw new Error(
+      "Connexion impossible à l'API. La variable NEXT_PUBLIC_API_URL doit être configurée sur le site déployé."
+    );
+  }
+
   const headers = new Headers(options.headers);
   const token = getToken();
 
@@ -35,10 +45,17 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
     headers.set("Authorization", `Bearer ${token}`);
   }
 
-  const response = await fetch(`${API_URL}${path}`, {
-    ...options,
-    headers,
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${API_URL}${path}`, {
+      ...options,
+      headers,
+    });
+  } catch {
+    throw new Error(
+      "Connexion impossible à l'API déployée. Vérifiez l'URL NEXT_PUBLIC_API_URL et les origines CORS autorisées."
+    );
+  }
 
   if (response.status === 204) {
     return undefined as T;
@@ -68,7 +85,7 @@ function safeJsonParse(text: string) {
 
 function getTokenMaxAge(token: string) {
   try {
-    const payload = JSON.parse(atob(token.split(".")[1])) as { exp?: number };
+    const payload = decodeJwtPayload<{ exp?: number }>(token);
     if (!payload.exp) return 60 * 60;
     return Math.max(0, Math.floor(payload.exp - Date.now() / 1000));
   } catch {

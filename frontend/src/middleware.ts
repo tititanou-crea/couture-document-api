@@ -1,4 +1,5 @@
 import { TOKEN_COOKIE } from "@/services/api";
+import { decodeJwtPayload } from "@/utils/jwt";
 import { NextRequest, NextResponse } from "next/server";
 
 const publicRoutes = new Set(["/", "/login"]);
@@ -36,7 +37,7 @@ export const config = {
 
 function readSession(token: string): { role?: string } | null {
   try {
-    const payload = JSON.parse(atob(token.split(".")[1])) as { exp?: number; role?: string };
+    const payload = decodeJwtPayload<{ exp?: number; role?: string }>(token);
     if (!payload.role) return null;
     if (payload.exp && Date.now() / 1000 > payload.exp) return null;
     return payload;
