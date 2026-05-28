@@ -25,6 +25,8 @@ class Settings(BaseSettings):
     MEDIA_BASE_URL: str = "/media/uploads"
     MAX_UPLOAD_SIZE_MB: int = 5
     ALLOWED_IMAGE_EXTENSIONS: list[str] = [".jpg", ".jpeg", ".png", ".webp"]
+    OPENAI_API_KEY: str | None = None
+    OPENAI_VISION_MODEL: str = "gpt-4.1-mini"
 
     @field_validator("DATABASE_URL")
     @classmethod

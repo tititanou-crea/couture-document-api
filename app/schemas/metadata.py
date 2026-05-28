@@ -15,9 +15,43 @@ class MetadataLookupRequest(BaseModel):
 
 class MetadataLookupResponse(BaseModel):
     title: str | None = None
+    subtitle: str | None = None
     authors: list[str] = Field(default_factory=list)
     publisher: str | None = None
+    isbn: str | None = None
+    published_year: str | None = Field(default=None, alias="publishedYear")
+    page_count: int | None = Field(default=None, alias="pageCount")
     description: str | None = None
     cover_url: str | None = Field(default=None, alias="coverUrl")
+    extracted_text: str | None = Field(default=None, alias="extractedText")
+    confidence: str | None = None
+
+    model_config = ConfigDict(populate_by_name=True)
+
+
+class PhotoMetadataResponse(BaseModel):
+    title: str | None = None
+    subtitle: str | None = None
+    authors: list[str] = Field(default_factory=list)
+    publisher: str | None = None
+    isbn: str | None = None
+    published_year: str | None = Field(default=None, alias="publishedYear")
+    page_count: int | None = Field(default=None, alias="pageCount")
+    description: str | None = None
+    extracted_text: str | None = Field(default=None, alias="extractedText")
+    confidence: str | None = None
+
+    model_config = ConfigDict(populate_by_name=True)
+
+
+class PhotoMetadataImage(BaseModel):
+    data_url: str = Field(alias="dataUrl")
+
+    model_config = ConfigDict(populate_by_name=True)
+
+
+class PhotoMetadataRequest(BaseModel):
+    cover_photo: PhotoMetadataImage | None = Field(default=None, alias="coverPhoto")
+    back_photo: PhotoMetadataImage | None = Field(default=None, alias="backPhoto")
 
     model_config = ConfigDict(populate_by_name=True)

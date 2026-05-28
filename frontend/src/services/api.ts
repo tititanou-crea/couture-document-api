@@ -38,7 +38,12 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
   const headers = new Headers(options.headers);
   const token = getToken();
 
-  if (!headers.has("Content-Type") && options.body && !(options.body instanceof Blob)) {
+  if (
+    !headers.has("Content-Type") &&
+    options.body &&
+    !(options.body instanceof Blob) &&
+    !(options.body instanceof FormData)
+  ) {
     headers.set("Content-Type", "application/json");
   }
   if (options.auth !== false && token) {

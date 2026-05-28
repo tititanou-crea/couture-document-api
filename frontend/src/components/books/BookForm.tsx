@@ -7,7 +7,9 @@ import { RadioCards } from "@/components/ui/RadioCards";
 import { SectionCard } from "@/components/ui/SectionCard";
 import { TextArea } from "@/components/ui/TextArea";
 import { TextField } from "@/components/ui/TextField";
+import { BookPhotoAssistant } from "@/components/books/BookPhotoAssistant";
 import { CoverUpload } from "@/components/books/CoverUpload";
+import type { ExtractedBookMetadata } from "@/services/metadata";
 import {
   audienceOptions,
   categoryOptions,
@@ -82,6 +84,21 @@ export function BookForm({ initialBook, submitLabel, onSubmit }: BookFormProps) 
     setForm((current) => ({ ...current, [key]: value }));
   }
 
+  function applyExtractedMetadata(metadata: ExtractedBookMetadata) {
+    setForm((current) => ({
+      ...current,
+      title: current.title || metadata.title || "",
+      subtitle: current.subtitle || metadata.subtitle || "",
+      authors: current.authors || metadata.authors?.join(", ") || "",
+      publisher: current.publisher || metadata.publisher || "",
+      isbn: current.isbn || metadata.isbn || "",
+      publicationYear: current.publicationYear || metadata.publishedYear || "",
+      pageCount: current.pageCount || (metadata.pageCount ? String(metadata.pageCount) : ""),
+      description: current.description || metadata.description || "",
+      coverUrl: current.coverUrl || metadata.coverUrl || null,
+    }));
+  }
+
   function buildPayload(): BookPayload {
     const notes = form.notes.trim() ? `\n\nNotes complémentaires :\n${form.notes.trim()}` : "";
     const tags = [
@@ -135,6 +152,13 @@ export function BookForm({ initialBook, submitLabel, onSubmit }: BookFormProps) 
   return (
     <form className="space-y-6" onSubmit={handleSubmit}>
       {error ? <Notice type="error">{error}</Notice> : null}
+
+      <SectionCard
+        title="Assistant photo"
+        description="Prenez la couverture et le dos du livre pour préremplir automatiquement les informations disponibles."
+      >
+        <BookPhotoAssistant onApply={applyExtractedMetadata} />
+      </SectionCard>
 
       <SectionCard
         title="1. Informations principales"
