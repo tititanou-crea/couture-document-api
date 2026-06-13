@@ -1,6 +1,7 @@
 import Link from "next/link";
-import { Edit3, ImageOff, Trash2 } from "lucide-react";
+import { Edit3, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { CoverImage } from "@/components/ui/CoverImage";
 import { labelFor } from "@/utils/bookOptions";
 import type { Pattern } from "@/types/pattern";
 
@@ -26,11 +27,7 @@ export function PatternCard({ pattern, onDelete }: PatternCardProps) {
     <article className="soft-panel overflow-hidden">
       <div className="grid gap-0 md:grid-cols-[150px_1fr]">
         <div className="flex min-h-44 items-center justify-center bg-cream">
-          {pattern.cover_url ? (
-            <img src={pattern.cover_url} alt={`Photo du patron ${pattern.model_name ?? ""}`} className="h-full w-full object-cover" />
-          ) : (
-            <ImageOff className="text-rosewood/55" size={44} aria-hidden />
-          )}
+          <CoverImage src={pattern.cover_url} alt={`Photo du patron ${pattern.model_name ?? ""}`} />
         </div>
         <div className="p-5">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">

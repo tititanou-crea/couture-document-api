@@ -1,6 +1,7 @@
 import type { ChangeEvent } from "react";
 import { Camera, ImagePlus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { CoverImage } from "@/components/ui/CoverImage";
 import { Notice } from "@/components/ui/Notice";
 import { uploadCover } from "@/services/upload";
 import { useAsyncState } from "@/hooks/useAsyncState";
@@ -29,7 +30,7 @@ export function CoverUpload({ value, onChange }: CoverUploadProps) {
     <div className="grid gap-5 md:grid-cols-[260px_1fr]">
       <div className="relative flex min-h-72 items-center justify-center overflow-hidden rounded-lg border border-dashed border-rosewood/30 bg-cream">
         {value ? (
-          <img src={value} alt="Aperçu de la couverture" className="h-full w-full object-cover" />
+          <CoverImage src={value} alt="Aperçu de la couverture" />
         ) : (
           <div className="px-6 text-center text-stone-600">
             <ImagePlus className="mx-auto mb-3 text-rosewood" size={42} aria-hidden />

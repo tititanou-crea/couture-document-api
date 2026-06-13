@@ -1,6 +1,7 @@
 import Link from "next/link";
-import { Edit3, ImageOff, Trash2 } from "lucide-react";
+import { Edit3, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { CoverImage } from "@/components/ui/CoverImage";
 import { labelFor } from "@/utils/bookOptions";
 import type { Book } from "@/types/book";
 
@@ -21,11 +22,7 @@ export function BookCard({ book, onDelete }: BookCardProps) {
     <article className="soft-panel overflow-hidden">
       <div className="grid gap-0 md:grid-cols-[150px_1fr]">
         <div className="flex min-h-44 items-center justify-center bg-cream">
-          {book.cover_url ? (
-            <img src={book.cover_url} alt={`Couverture de ${book.title ?? "livre"}`} className="h-full w-full object-cover" />
-          ) : (
-            <ImageOff className="text-rosewood/55" size={44} aria-hidden />
-          )}
+          <CoverImage src={book.cover_url} alt={`Couverture de ${book.title ?? "livre"}`} />
         </div>
         <div className="p-5">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
