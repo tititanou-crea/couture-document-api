@@ -24,6 +24,13 @@ async def test_upload_cover(client: AsyncClient, tmp_path: Path) -> None:
     assert payload["url"].startswith("/media/uploads/")
     assert len(list(tmp_path.iterdir())) == 1
 
+    uploaded_file = next(tmp_path.iterdir())
+    uploaded_file.unlink()
+    image_response = await client.get(payload["url"])
+    assert image_response.status_code == 200
+    assert image_response.headers["content-type"] == "image/png"
+    assert image_response.content == b"\x89PNG\r\n\x1a\nimage-bytes"
+
 
 async def test_upload_cover_rejects_non_image(client: AsyncClient, tmp_path: Path) -> None:
     def override_media_service() -> MediaService:

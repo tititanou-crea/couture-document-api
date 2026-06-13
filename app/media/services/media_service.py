@@ -1,8 +1,11 @@
 from pathlib import Path
 from uuid import uuid4
 
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.core.config import settings
 from app.core.exceptions import PayloadTooLargeError, UnsupportedMediaTypeError
+from app.models.media_asset import MediaAsset
 
 
 class MediaService:
@@ -14,12 +17,20 @@ class MediaService:
             extension.lower() for extension in settings.ALLOWED_IMAGE_EXTENSIONS
         }
 
-    async def save_cover(self, *, filename: str, content_type: str | None, content: bytes) -> str:
+    async def save_cover(
+        self,
+        *,
+        filename: str,
+        content_type: str | None,
+        content: bytes,
+        session: AsyncSession | None = None,
+    ) -> str:
         extension = Path(filename).suffix.lower()
         if extension not in self.allowed_extensions:
             raise UnsupportedMediaTypeError("Extension image non autorisee")
         if not content_type or not content_type.startswith("image/"):
             raise UnsupportedMediaTypeError("Le fichier doit etre une image")
+        validated_content_type = content_type
 
         if len(content) > self.max_size_bytes:
             raise PayloadTooLargeError("Image trop volumineuse")
@@ -30,6 +41,11 @@ class MediaService:
         filename = f"{uuid4().hex}{extension}"
         destination = self.storage_dir / filename
         destination.write_bytes(content)
+        if session is not None:
+            session.add(
+                MediaAsset(filename=filename, content_type=validated_content_type, content=content)
+            )
+            await session.commit()
         return f"{self.base_url}/{filename}"
 
     def _has_valid_image_signature(self, content: bytes, extension: str) -> bool:

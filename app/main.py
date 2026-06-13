@@ -9,6 +9,7 @@ from app.api.v1.router import api_router
 from app.core.config import settings
 from app.core.exceptions import register_exception_handlers
 from app.db.session import AsyncSessionLocal
+from app.routes.media import router as media_router
 from app.routes.metadata import router as metadata_router
 from app.services.admin_seed import ensure_default_admin
 
@@ -43,6 +44,7 @@ def create_app() -> FastAPI:
     register_exception_handlers(app)
     app.include_router(metadata_router)
     app.include_router(api_router, prefix=settings.API_V1_PREFIX)
+    app.include_router(media_router)
     settings.MEDIA_STORAGE_DIR.mkdir(parents=True, exist_ok=True)
     app.mount(
         settings.MEDIA_BASE_URL,

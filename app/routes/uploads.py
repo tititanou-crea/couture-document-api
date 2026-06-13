@@ -2,8 +2,10 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, Header, Request, status
 from pydantic import BaseModel
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.auth import get_current_user
+from app.db.session import get_db_session
 from app.media.services.media_service import MediaService
 
 router = APIRouter(prefix="/upload", tags=["Upload"], dependencies=[Depends(get_current_user)])
@@ -22,11 +24,13 @@ async def upload_cover(
     request: Request,
     filename: Annotated[str, Header(alias="X-Filename")],
     service: Annotated[MediaService, Depends(get_media_service)],
+    session: Annotated[AsyncSession, Depends(get_db_session)],
 ) -> UploadResponse:
     content = await request.body()
     url = await service.save_cover(
         filename=filename,
         content_type=request.headers.get("content-type"),
         content=content,
+        session=session,
     )
     return UploadResponse(url=url)
