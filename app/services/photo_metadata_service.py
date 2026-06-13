@@ -5,13 +5,7 @@ import urllib.request
 from typing import Any
 
 from app.core.config import settings
-from app.core.enums import (
-    DifficultyLevel,
-    MainCategory,
-    PatternFormat,
-    ProjectType,
-    TargetAudience,
-)
+from app.core.enums import DifficultyLevel, MainCategory, PatternFormat, ProjectType, TargetAudience
 from app.schemas.metadata import (
     PatternPhotoMetadataResponse,
     PhotoMetadataImage,
@@ -94,7 +88,6 @@ async def extract_book_metadata_from_photos(
     )
 
 
-
 async def extract_pattern_metadata_from_photo(
     *, photo: PhotoMetadataImage | None
 ) -> PatternPhotoMetadataResponse:
@@ -160,6 +153,7 @@ async def extract_pattern_metadata_from_photo(
         confidence=_clean_confidence(parsed.get("confidence")),
     )
 
+
 def _post_openai_response(payload: dict[str, Any]) -> dict[str, Any]:
     request = urllib.request.Request(
         "https://api.openai.com/v1/responses",
@@ -174,12 +168,56 @@ def _post_openai_response(payload: dict[str, Any]) -> dict[str, Any]:
         with urllib.request.urlopen(request, timeout=45) as response:
             return json.loads(response.read().decode("utf-8"))
     except urllib.error.HTTPError as exc:
-        exc.read()
-        raise PhotoMetadataError("L'analyse photo a échoué côté service d'extraction.") from exc
+        raise PhotoMetadataError(_format_openai_http_error(exc)) from exc
     except (urllib.error.URLError, TimeoutError) as exc:
         raise PhotoMetadataError(
             "Le service d'extraction photo est momentanément indisponible."
         ) from exc
+
+
+def _format_openai_http_error(exc: urllib.error.HTTPError) -> str:
+    raw_detail = exc.read().decode("utf-8", errors="ignore")
+    detail = _extract_openai_error_message(raw_detail)
+
+    if exc.code == 400:
+        return f"OpenAI a refuse la requete d'analyse photo : {detail}"
+    if exc.code == 401:
+        return "Cle OpenAI invalide ou expiree. Verifiez OPENAI_API_KEY cote API."
+    if exc.code == 403:
+        return (
+            "Acces OpenAI refuse. Verifiez les permissions du projet et l'acces au modele "
+            f"{settings.OPENAI_VISION_MODEL}."
+        )
+    if exc.code == 404:
+        return (
+            f"Modele OpenAI introuvable ou non disponible : {settings.OPENAI_VISION_MODEL}. "
+            "Verifiez OPENAI_VISION_MODEL cote API."
+        )
+    if exc.code == 429:
+        return "Quota ou limite OpenAI atteint. Verifiez la facturation et les limites du projet."
+
+    return f"L'analyse photo a echoue cote OpenAI ({exc.code}) : {detail}"
+
+
+def _extract_openai_error_message(raw_detail: str) -> str:
+    if not raw_detail:
+        return "aucun detail fourni."
+    try:
+        parsed = json.loads(raw_detail)
+    except json.JSONDecodeError:
+        return raw_detail[:300]
+
+    error = parsed.get("error")
+    if isinstance(error, dict):
+        message = error.get("message")
+        if isinstance(message, str) and message.strip():
+            return message.strip()
+
+    message = parsed.get("message")
+    if isinstance(message, str) and message.strip():
+        return message.strip()
+
+    return raw_detail[:300]
 
 
 def _extract_output_text(data: dict[str, Any]) -> str:
@@ -235,7 +273,6 @@ def _parse_positive_int(value: Any) -> int | None:
     except (TypeError, ValueError):
         return None
     return number if number > 0 else None
-
 
 
 def _clean_enum(value: Any, enum_class: type) -> Any | None:

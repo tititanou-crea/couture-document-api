@@ -54,6 +54,20 @@ pytest / httpx
 Ruff
 - Controle qualite et imports.
 
+OpenAI Responses API / vision
+- Service externe utilise cote backend pour analyser les photos de livres.
+- Sert a extraire depuis la couverture et le dos :
+  - titre
+  - sous-titre
+  - auteur(s)
+  - editeur
+  - ISBN
+  - annee
+  - nombre de pages
+  - resume
+  - texte reconnu
+- La cle API reste uniquement cote serveur via OPENAI_API_KEY.
+
 
 ARCHITECTURE GENERALE
 ---------------------
@@ -61,6 +75,8 @@ ARCHITECTURE GENERALE
 app/main.py
 - Cree l'application FastAPI.
 - Configure CORS.
+- Configure allow_origin_regex pour autoriser des origines dynamiques, notamment Flutter Web local.
+- Branche la route publique /metadata.
 - Branche les routes /api/v1.
 - Monte le dossier media local sur MEDIA_BASE_URL.
 - Expose /health.
@@ -70,6 +86,7 @@ app/api/v1/router.py
 - Assemble les routes de la version 1 :
   - auth
   - books
+  - metadata
   - upload
   - users
 
@@ -81,6 +98,7 @@ app/core/config.py
   - API_V1_PREFIX
   - DATABASE_URL
   - BACKEND_CORS_ORIGINS
+  - BACKEND_CORS_ORIGIN_REGEX
   - SECRET_KEY
   - ACCESS_TOKEN_EXPIRE_MINUTES
   - DEFAULT_ADMIN_EMAIL
@@ -91,6 +109,10 @@ app/core/config.py
   - MEDIA_BASE_URL
   - MAX_UPLOAD_SIZE_MB
   - ALLOWED_IMAGE_EXTENSIONS
+  - OPENAI_API_KEY
+  - OPENAI_VISION_MODEL
+- OPENAI_API_KEY est obligatoire pour l'extraction automatique depuis photos.
+- OPENAI_VISION_MODEL vaut gpt-5.5 par defaut.
 
 app/core/enums.py
 - Enums Python partages par Pydantic et SQLAlchemy.
@@ -277,6 +299,39 @@ app/schemas/user.py
 - Validation email simple sans dependance externe.
 - TokenResponse retourne le JWT et l'utilisateur connecte.
 
+app/schemas/metadata.py
+- Schemas pour la recherche metadata consommee par l'application Flutter.
+- MetadataLookupRequest accepte :
+  - type : livre, book ou magazine
+  - isbn
+  - ean
+  - title
+  - dateNumero, mappe vers date_numero cote Python
+- MetadataLookupResponse retourne un format leger compatible Flutter :
+  - title
+  - authors
+  - publisher
+  - description
+  - coverUrl, mappe depuis cover_url cote Python
+- Schemas pour l'extraction metadata depuis photos :
+  - PhotoMetadataImage
+  - PhotoMetadataRequest
+  - PhotoMetadataResponse
+- PhotoMetadataRequest accepte :
+  - coverPhoto, image de couverture sous forme de data URL
+  - backPhoto, image du dos sous forme de data URL
+- PhotoMetadataResponse retourne :
+  - title
+  - subtitle
+  - authors
+  - publisher
+  - isbn
+  - publishedYear
+  - pageCount
+  - description
+  - extractedText
+  - confidence
+
 
 REPOSITORIES
 ------------
@@ -343,6 +398,28 @@ app/services/user_service.py
 - Liste les comptes.
 - Cree les comptes avec mot de passe bcrypt.
 
+app/services/photo_metadata_service.py
+- Service d'extraction automatique depuis photos.
+- Utilise OPENAI_API_KEY et OPENAI_VISION_MODEL.
+- Envoie les images de couverture et/ou de dos a l'API OpenAI Responses avec detail high.
+- Demande une reponse JSON stricte avec :
+  - title
+  - subtitle
+  - authors
+  - publisher
+  - isbn
+  - publishedYear
+  - pageCount
+  - description
+  - extractedText
+  - confidence
+- Nettoie et normalise la reponse :
+  - ISBN 10/13 uniquement
+  - annee extraite sur 4 chiffres
+  - pageCount converti en entier positif
+  - confidence limite a high, medium ou low
+- Retourne une erreur claire si OPENAI_API_KEY manque ou si le service vision est indisponible.
+
 app/media/services/media_service.py
 - Service media local.
 - Fonction :
@@ -394,6 +471,82 @@ app/routes/uploads.py
 - Upload actuel via corps binaire brut :
   - Header Content-Type : image/png, image/jpeg ou image/webp
   - Header X-Filename : nom du fichier
+
+app/routes/metadata.py
+- Prefixes exposes :
+  - /metadata
+  - /api/v1/metadata
+- Endpoint public :
+  - POST /
+- Objectif :
+  - permettre a l'application Flutter de rechercher des metadonnees sans exposer de cle secrete ;
+  - chercher un livre existant dans le catalogue par ISBN ;
+  - retourner 204 No Content quand aucune metadata n'est trouvee.
+- Requetes acceptees :
+  - {"type":"livre","isbn":"978..."}
+  - {"type":"magazine","ean":"..."}
+  - {"type":"magazine","title":"Burda","dateNumero":"2024"}
+- Reponse quand un livre est trouve :
+  - title
+  - authors
+  - publisher
+  - description
+  - coverUrl
+- Etat actuel :
+  - les livres sont resolus par ISBN depuis la table books ;
+  - les magazines retournent 204 tant que le modele magazine n'existe pas.
+- Endpoint prive :
+  - POST /extract-from-photos
+- Prefixe complet :
+  - POST /api/v1/metadata/extract-from-photos
+- Authentification :
+  - JWT requis.
+- Objectif :
+  - analyser une photo de couverture et/ou une photo du dos du livre ;
+  - extraire un maximum d'informations sans retranscription manuelle ;
+  - pre-remplir le formulaire d'ajout de livre cote frontend.
+- Requete acceptee :
+  - JSON avec coverPhoto.dataUrl et/ou backPhoto.dataUrl.
+- Reponse :
+  - title
+  - subtitle
+  - authors
+  - publisher
+  - isbn
+  - publishedYear
+  - pageCount
+  - description
+  - extractedText
+  - confidence
+- Configuration requise :
+  - OPENAI_API_KEY doit etre definie cote API.
+  - OPENAI_VISION_MODEL peut etre surcharge, gpt-5.5 par defaut.
+
+
+APPLICATION FLUTTER
+-------------------
+
+L'application Flutter externe utilise la variable de compilation :
+- LIBRARY_METADATA_API_URL
+
+Exemples :
+- flutter run -d chrome --dart-define=LIBRARY_METADATA_API_URL=https://couture-document-api.onrender.com/metadata
+- flutter build web --dart-define=LIBRARY_METADATA_API_URL=https://couture-document-api.onrender.com/metadata
+
+Contrat attendu par Flutter :
+- POST JSON vers l'URL metadata.
+- 2xx avec JSON si une metadata est trouvee.
+- 204 ou corps vide si aucune metadata n'est trouvee.
+- Pas de cle secrete cote Flutter.
+
+Configuration CORS pour Flutter Web :
+- BACKEND_CORS_ORIGINS doit contenir les origines exactes des applications web deployeees.
+- Exemple :
+  - ["https://couture-document-api.vercel.app","https://biblio-couture.web.app","https://biblio-couture.firebaseapp.com"]
+- BACKEND_CORS_ORIGIN_REGEX peut autoriser Flutter Web local avec ports variables.
+- Exemple :
+  - ^https?://(localhost|127\.0\.0\.1)(:[0-9]+)?$
+- Apres modification des variables Render, l'API doit etre redeployee.
 
 
 FRONTEND WEB
@@ -488,6 +641,7 @@ frontend/src/services/api.ts
 - Ajoute Authorization: Bearer <token> si le JWT existe.
 - Gere les erreurs API avec messages simples.
 - Utilise par defaut /api/v1.
+- Gere les corps JSON, Blob et FormData sans forcer un Content-Type incorrect.
 
 frontend/src/services/auth.ts
 - Appels :
@@ -512,6 +666,15 @@ frontend/src/services/upload.ts
   - Content-Type
   - X-Filename
 - Convertit les URLs relatives /media/... en URL absolue pour compatibilite avec cover_url.
+
+frontend/src/services/metadata.ts
+- Appel :
+  - POST /metadata/extract-from-photos
+- Convertit les fichiers image selectionnes en data URL.
+- Envoie coverPhoto et backPhoto au backend.
+- Retourne les metadonnees extraites pour pre-remplir BookForm.
+- Type principal :
+  - ExtractedBookMetadata
 
 frontend/src/services/users.ts
 - Appels prevus pour la gestion admin :
@@ -541,6 +704,7 @@ frontend/src/components/books/BookForm.tsx
 - Formulaire principal d'ajout/modification de livre.
 - Page unique, sans multi-etapes.
 - Sections :
+  - Assistant photo
   - 1. Informations principales
   - 2. Informations couture
   - 3. Description
@@ -555,6 +719,23 @@ frontend/src/components/books/BookForm.tsx
   - boutons radio patrons inclus
   - notes complementaires repliables
   - brouillon par defaut
+- Integre BookPhotoAssistant.
+- Applique les metadonnees extraites uniquement sur les champs vides afin de ne pas ecraser une saisie deja faite.
+
+frontend/src/components/books/BookPhotoAssistant.tsx
+- Assistant photo pour l'ajout de livre.
+- Permet d'ajouter :
+  - une photo de la couverture
+  - une photo du dos du livre
+- Sur mobile, utilise capture="environment" pour ouvrir l'appareil photo.
+- Affiche un apercu des deux photos.
+- Bouton "Extraire les informations" :
+  - enregistre la couverture via POST /upload/cover si une photo de couverture existe ;
+  - envoie les photos a POST /metadata/extract-from-photos ;
+  - remonte les champs extraits a BookForm.
+- Affiche un message indiquant quels champs ont ete proposes.
+- Permet de consulter le texte reconnu via "Voir le texte reconnu".
+- Permet d'effacer les photos de l'assistant.
 
 frontend/src/components/books/CoverUpload.tsx
 - Composant upload couverture.
@@ -634,6 +815,15 @@ app/tests/test_uploads.py
 - Upload couverture valide.
 - Rejet fichier non image.
 
+app/tests/test_metadata.py
+- Recherche metadata publique sans JWT.
+- Verifie POST /metadata.
+- Verifie POST /api/v1/metadata.
+- Verifie la reponse JSON au format Flutter quand un livre est trouve.
+- Verifie 204 No Content quand aucune metadata n'est trouvee.
+- Verifie POST /api/v1/metadata/extract-from-photos.
+- Verifie que l'extraction photo retourne les champs attendus pour pre-remplir un livre.
+
 app/tests/conftest.py
 - Configure une base SQLite en memoire pour tests rapides.
 - Override get_db_session.
@@ -655,6 +845,9 @@ docker compose exec api alembic revision --autogenerate -m "description"
 Lancer les tests :
 pytest
 
+Etat de reference actuel :
+- 24 tests backend passent avec pytest.
+
 Controle qualite :
 ruff check .
 
@@ -667,6 +860,12 @@ Verifier le frontend :
 cd frontend
 npm run typecheck
 npm run build
+
+Brancher Flutter Web sur l'API metadata :
+flutter run -d chrome --dart-define=LIBRARY_METADATA_API_URL=https://couture-document-api.onrender.com/metadata
+
+Build Flutter Web avec l'API metadata :
+flutter build web --dart-define=LIBRARY_METADATA_API_URL=https://couture-document-api.onrender.com/metadata
 
 
 JOURNAL DES MODIFICATIONS
@@ -796,3 +995,60 @@ JOURNAL DES MODIFICATIONS
   - Erreur reseau : ENOTFOUND registry.npmjs.org.
   - Aucun node_modules ni package-lock.json n'a ete cree.
   - Compilation Next.js et typecheck a relancer apres retablissement de l'acces npm.
+
+2026-05-24
+- Ajout d'un endpoint metadata public pour brancher l'application Flutter.
+- Fichiers ajoutes :
+  - app/schemas/metadata.py
+  - app/routes/metadata.py
+  - app/tests/test_metadata.py
+- Fichiers modifies :
+  - app/main.py
+  - app/api/v1/router.py
+  - app/core/config.py
+  - render.yaml
+  - README.md
+  - DOCUMENTATION_TECHNIQUE_PROJET.txt
+- Routes ajoutees :
+  - POST /metadata
+  - POST /api/v1/metadata
+- Contrat Flutter :
+  - accepte type=livre avec isbn ;
+  - accepte type=magazine avec ean ou title/dateNumero ;
+  - retourne title, authors, publisher, description et coverUrl quand un livre est trouve ;
+  - retourne 204 No Content quand aucune metadata n'est trouvee.
+- Authentification :
+  - l'endpoint metadata est public et ne demande pas de JWT.
+- CORS :
+  - ajout de BACKEND_CORS_ORIGIN_REGEX pour autoriser Flutter Web local avec ports variables.
+  - BACKEND_CORS_ORIGINS doit contenir les origines exactes des apps web deployeees.
+- Tests :
+  - app/tests/test_metadata.py et app/tests/test_books.py passent : 13 tests.
+  - ruff check passe sur les fichiers modifies.
+
+2026-05-28
+- Ajout de l'extraction automatique des informations livre depuis photos.
+- Objectif :
+  - permettre au front d'ajout de livre de prendre/importer une photo de la couverture ;
+  - permettre de prendre/importer une photo du dos ;
+  - extraire automatiquement un maximum d'informations visibles sans retranscription manuelle.
+- Backend :
+  - app/core/config.py ajoute OPENAI_API_KEY et OPENAI_VISION_MODEL.
+  - app/schemas/metadata.py ajoute PhotoMetadataImage, PhotoMetadataRequest et PhotoMetadataResponse.
+  - app/services/photo_metadata_service.py ajoute le service d'analyse photo via OpenAI Responses API / vision.
+  - app/routes/metadata.py ajoute POST /api/v1/metadata/extract-from-photos, route privee JWT.
+- Frontend :
+  - frontend/src/services/metadata.ts ajoute l'appel d'extraction photo.
+  - frontend/src/components/books/BookPhotoAssistant.tsx ajoute l'interface couverture + dos + extraction.
+  - frontend/src/components/books/BookForm.tsx integre l'assistant photo et applique les champs extraits sans ecraser les champs deja remplis.
+  - frontend/src/services/api.ts gere correctement les corps Blob et FormData.
+- Configuration :
+  - .env.example documente OPENAI_API_KEY et OPENAI_VISION_MODEL.
+  - OPENAI_API_KEY doit etre configuree dans l'environnement API local et Render.
+  - La cle OpenAI ne doit jamais etre placee dans le frontend.
+- Tests :
+  - app/tests/test_metadata.py couvre la route d'extraction photo.
+  - pytest passe : 19 tests backend.
+  - ruff check app passe.
+  - npm run typecheck passe.
+  - npm run build passe.

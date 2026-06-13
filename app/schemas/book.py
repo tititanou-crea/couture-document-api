@@ -2,11 +2,20 @@ import re
 import uuid
 from datetime import date, datetime
 
-from pydantic import AnyHttpUrl, BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import (
+    AliasChoices,
+    AnyHttpUrl,
+    BaseModel,
+    ConfigDict,
+    Field,
+    field_validator,
+    model_validator,
+)
 
 from app.core.enums import (
     DifficultyLevel,
     DocumentStatus,
+    DocumentType,
     MainCategory,
     ProjectType,
     TargetAudience,
@@ -14,6 +23,7 @@ from app.core.enums import (
 )
 
 ISBN_PATTERN = re.compile(r"^(?:97[89][-\s]?)?\d[-\s]?\d{2,5}[-\s]?\d{2,7}[-\s]?[\dX]$", re.I)
+EAN_PATTERN = re.compile(r"^[0-9][0-9\-\s]{6,16}[0-9]$")
 
 
 def normalize_isbn(value: str) -> str:
@@ -41,13 +51,39 @@ def is_valid_isbn(value: str) -> bool:
     return False
 
 
+def normalize_ean(value: str) -> str:
+    return re.sub(r"[\s-]", "", value)
+
+
+def is_valid_ean(value: str) -> bool:
+    normalized = normalize_ean(value)
+    if len(normalized) not in {8, 13} or not normalized.isdigit():
+        return False
+
+    digits = [int(char) for char in normalized]
+    check_digit = digits[-1]
+    payload = digits[:-1]
+    if len(normalized) == 8:
+        weights = [3, 1, 3, 1, 3, 1, 3]
+    else:
+        weights = [1, 3] * 6
+    total = sum(digit * weight for digit, weight in zip(payload, weights, strict=True))
+    return (10 - (total % 10)) % 10 == check_digit
+
+
 def _clean_string_list(values: list[str]) -> list[str]:
     cleaned = [value.strip() for value in values if value.strip()]
     return list(dict.fromkeys(cleaned))
 
 
 class BookBase(BaseModel):
+    document_type: DocumentType = Field(
+        default=DocumentType.BOOK,
+        validation_alias=AliasChoices("document_type", "type"),
+    )
     isbn: str | None = Field(default=None, min_length=10, max_length=17, examples=["9782842218232"])
+    ean: str | None = Field(default=None, min_length=8, max_length=17, examples=["3781479505405"])
+    issue_number: str | None = Field(default=None, max_length=80)
     title: str | None = Field(default=None, min_length=1, max_length=255)
     subtitle: str | None = Field(default=None, max_length=255)
     description: str | None = None
@@ -70,6 +106,13 @@ class BookBase(BaseModel):
     validated_by: uuid.UUID | None = None
     validated_at: datetime | None = None
 
+    @field_validator("document_type", mode="before")
+    @classmethod
+    def normalize_document_type(cls, value: str | DocumentType) -> str | DocumentType:
+        if value == "livre":
+            return DocumentType.BOOK
+        return value
+
     @field_validator("isbn")
     @classmethod
     def validate_isbn(cls, value: str | None) -> str | None:
@@ -78,6 +121,15 @@ class BookBase(BaseModel):
         if not ISBN_PATTERN.match(value) or not is_valid_isbn(value):
             raise ValueError("ISBN invalide")
         return normalize_isbn(value)
+
+    @field_validator("ean")
+    @classmethod
+    def validate_ean(cls, value: str | None) -> str | None:
+        if value is None:
+            return value
+        if not EAN_PATTERN.match(value) or not is_valid_ean(value):
+            raise ValueError("EAN invalide")
+        return normalize_ean(value)
 
     @field_validator("authors", "categories", "tags")
     @classmethod
@@ -90,12 +142,19 @@ class BookBase(BaseModel):
             return self
 
         missing_fields = []
-        if not self.isbn:
+        if self.document_type is DocumentType.BOOK and not self.isbn:
             missing_fields.append("isbn")
         if not self.title:
             missing_fields.append("title")
-        if not self.authors:
+        if self.document_type is DocumentType.BOOK and not self.authors:
             missing_fields.append("authors")
+        if (
+            self.document_type is DocumentType.MAGAZINE
+            and not self.ean
+            and not self.issue_number
+            and not self.published_date
+        ):
+            missing_fields.append("ean, issue_number ou published_date")
         if missing_fields:
             raise ValueError(
                 "Les champs suivants sont requis hors brouillon : "
@@ -109,7 +168,13 @@ class BookCreate(BookBase):
 
 
 class BookUpdate(BaseModel):
+    document_type: DocumentType | None = Field(
+        default=None,
+        validation_alias=AliasChoices("document_type", "type"),
+    )
     isbn: str | None = Field(default=None, min_length=10, max_length=17)
+    ean: str | None = Field(default=None, min_length=8, max_length=17)
+    issue_number: str | None = Field(default=None, max_length=80)
     title: str | None = Field(default=None, min_length=1, max_length=255)
     subtitle: str | None = Field(default=None, max_length=255)
     description: str | None = None
@@ -132,6 +197,15 @@ class BookUpdate(BaseModel):
     validated_by: uuid.UUID | None = None
     validated_at: datetime | None = None
 
+    @field_validator("document_type", mode="before")
+    @classmethod
+    def normalize_optional_document_type(
+        cls, value: str | DocumentType | None
+    ) -> str | DocumentType | None:
+        if value == "livre":
+            return DocumentType.BOOK
+        return value
+
     @field_validator("isbn")
     @classmethod
     def validate_optional_isbn(cls, value: str | None) -> str | None:
@@ -140,6 +214,15 @@ class BookUpdate(BaseModel):
         if not ISBN_PATTERN.match(value) or not is_valid_isbn(value):
             raise ValueError("ISBN invalide")
         return normalize_isbn(value)
+
+    @field_validator("ean")
+    @classmethod
+    def validate_optional_ean(cls, value: str | None) -> str | None:
+        if value is None:
+            return value
+        if not EAN_PATTERN.match(value) or not is_valid_ean(value):
+            raise ValueError("EAN invalide")
+        return normalize_ean(value)
 
     @field_validator("authors", "categories", "tags")
     @classmethod
@@ -163,4 +246,3 @@ class PaginatedBooks(BaseModel):
     total: int
     limit: int
     offset: int
-

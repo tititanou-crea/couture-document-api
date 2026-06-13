@@ -29,10 +29,14 @@ export type Technique =
   | "patternmaking";
 
 export type DocumentStatus = "draft" | "pending_validation" | "validated";
+export type DocumentType = "book" | "magazine";
 
 export type Book = {
   id: string;
+  document_type: DocumentType;
   isbn?: string | null;
+  ean?: string | null;
+  issue_number?: string | null;
   title?: string | null;
   subtitle?: string | null;
   description?: string | null;
@@ -55,7 +59,8 @@ export type Book = {
   updated_at: string;
 };
 
-export type BookPayload = Omit<Book, "id" | "created_at" | "updated_at"> & {
+export type BookPayload = Omit<Book, "id" | "document_type" | "created_at" | "updated_at"> & {
+  document_type?: DocumentType;
   created_by?: string | null;
   validated_by?: string | null;
   validated_at?: string | null;

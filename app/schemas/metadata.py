@@ -27,6 +27,8 @@ class MetadataLookupResponse(BaseModel):
     authors: list[str] = Field(default_factory=list)
     publisher: str | None = None
     isbn: str | None = None
+    ean: str | None = None
+    issue_number: str | None = Field(default=None, alias="issueNumber")
     published_year: str | None = Field(default=None, alias="publishedYear")
     page_count: int | None = Field(default=None, alias="pageCount")
     description: str | None = None

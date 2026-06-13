@@ -22,6 +22,29 @@ BOOK_PAYLOAD = {
     "status": "draft",
 }
 
+MAGAZINE_PAYLOAD = {
+    "type": "magazine",
+    "ean": "9771234567003",
+    "issue_number": "Mars 2026",
+    "title": "Burda Style",
+    "subtitle": "Special couture printemps",
+    "description": "Un numero consacre aux robes, vestes legeres et finitions couture.",
+    "publisher": "Burda",
+    "published_date": "2026-03-01",
+    "page_count": 96,
+    "language": "fr",
+    "cover_url": "https://example.com/covers/burda-style-mars-2026.jpg",
+    "categories": ["couture", "magazine"],
+    "tags": ["robes", "printemps"],
+    "difficulty_levels": ["intermediate"],
+    "target_audiences": ["women"],
+    "main_categories": ["clothing"],
+    "project_types": ["dress", "jacket"],
+    "techniques": ["serger"],
+    "includes_patterns": True,
+    "status": "draft",
+}
+
 
 async def test_create_and_get_book(client: AsyncClient) -> None:
     create_response = await client.post("/api/v1/books", json=BOOK_PAYLOAD)
@@ -37,6 +60,35 @@ async def test_create_and_get_book(client: AsyncClient) -> None:
 
     assert get_response.status_code == 200
     assert get_response.json()["id"] == created["id"]
+
+
+async def test_create_magazine_with_ean_and_issue_number(client: AsyncClient) -> None:
+    response = await client.post("/api/v1/books", json=MAGAZINE_PAYLOAD)
+
+    assert response.status_code == 201
+    created = response.json()
+    assert created["document_type"] == "magazine"
+    assert created["ean"] == MAGAZINE_PAYLOAD["ean"]
+    assert created["issue_number"] == MAGAZINE_PAYLOAD["issue_number"]
+    assert created["isbn"] is None
+
+
+async def test_reject_invalid_magazine_ean(client: AsyncClient) -> None:
+    response = await client.post(
+        "/api/v1/books",
+        json={**MAGAZINE_PAYLOAD, "ean": "1234567890123"},
+    )
+
+    assert response.status_code == 422
+
+
+async def test_reject_incomplete_magazine_pending_validation(client: AsyncClient) -> None:
+    response = await client.post(
+        "/api/v1/books",
+        json={"type": "magazine", "title": "Burda Style", "status": "pending_validation"},
+    )
+
+    assert response.status_code == 422
 
 
 async def test_list_books_is_paginated(client: AsyncClient) -> None:

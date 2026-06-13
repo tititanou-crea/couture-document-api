@@ -42,6 +42,10 @@ class BookService:
             existing = None
         if existing is not None:
             raise ConflictError("Un livre avec cet ISBN existe deja")
+        if payload.ean is not None:
+            existing = await self.repository.get_by_ean(payload.ean)
+            if existing is not None:
+                raise ConflictError("Un document avec cet EAN existe deja")
 
         values = _to_model_values(payload)
         if values.get("status") == DocumentStatus.VALIDATED and values.get("validated_at") is None:
@@ -64,6 +68,10 @@ class BookService:
             existing = await self.repository.get_by_isbn(str(values["isbn"]))
             if existing is not None:
                 raise ConflictError("Un livre avec cet ISBN existe deja")
+        if "ean" in values and values["ean"] != book.ean:
+            existing = await self.repository.get_by_ean(str(values["ean"]))
+            if existing is not None:
+                raise ConflictError("Un document avec cet EAN existe deja")
 
         self._validate_book_after_update(book, values)
         if values.get("status") == DocumentStatus.VALIDATED and values.get("validated_at") is None:
@@ -88,7 +96,10 @@ class BookService:
 
     def _validate_book_after_update(self, book: Book, values: dict[str, object]) -> None:
         merged = {
+            "document_type": book.document_type,
             "isbn": book.isbn,
+            "ean": book.ean,
+            "issue_number": book.issue_number,
             "title": book.title,
             "subtitle": book.subtitle,
             "description": book.description,

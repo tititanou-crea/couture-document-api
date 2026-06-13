@@ -3,7 +3,14 @@ from datetime import date
 from sqlalchemy import Boolean, Date, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.core.enums import DifficultyLevel, MainCategory, ProjectType, TargetAudience, Technique
+from app.core.enums import (
+    DifficultyLevel,
+    DocumentType,
+    MainCategory,
+    ProjectType,
+    TargetAudience,
+    Technique,
+)
 from app.db.enum_types import EnumList
 from app.db.session import Base
 from app.db.types import StringList
@@ -13,7 +20,15 @@ from app.models.mixins import BaseDocumentMixin, ValidationWorkflowMixin
 class Book(BaseDocumentMixin, ValidationWorkflowMixin, Base):
     __tablename__ = "books"
 
+    document_type: Mapped[DocumentType] = mapped_column(
+        String(20),
+        nullable=False,
+        default=DocumentType.BOOK,
+        server_default=DocumentType.BOOK.value,
+    )
     isbn: Mapped[str | None] = mapped_column(String(17), unique=True, index=True, nullable=True)
+    ean: Mapped[str | None] = mapped_column(String(14), unique=True, index=True, nullable=True)
+    issue_number: Mapped[str | None] = mapped_column(String(80), nullable=True)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     authors: Mapped[list[str]] = mapped_column(StringList(160), nullable=False, default=list)
     publisher: Mapped[str | None] = mapped_column(String(180), nullable=True)

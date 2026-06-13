@@ -26,6 +26,20 @@ class BookRepository:
         result = await self.session.execute(select(Book).where(Book.isbn == isbn))
         return result.scalar_one_or_none()
 
+    async def get_by_ean(self, ean: str) -> Book | None:
+        result = await self.session.execute(select(Book).where(Book.ean == ean))
+        return result.scalar_one_or_none()
+
+    async def get_magazine_by_title_and_issue(self, *, title: str, issue: str) -> Book | None:
+        result = await self.session.execute(
+            select(Book).where(
+                Book.document_type == "magazine",
+                func.lower(Book.title) == title.lower(),
+                func.lower(Book.issue_number) == issue.lower(),
+            )
+        )
+        return result.scalar_one_or_none()
+
     async def create(self, book: Book) -> Book:
         self.session.add(book)
         await self.session.flush()
@@ -53,7 +67,12 @@ class BookRepository:
         techniques_text = self._text_from_list_column(Book.techniques)
         statement = select(Book).where(
             or_(
+                func.lower(Book.document_type).like(pattern),
+                func.lower(Book.isbn).like(pattern),
+                func.lower(Book.ean).like(pattern),
+                func.lower(Book.issue_number).like(pattern),
                 func.lower(Book.title).like(pattern),
+                func.lower(Book.publisher).like(pattern),
                 func.lower(authors_text).like(pattern),
                 func.lower(tags_text).like(pattern),
                 func.lower(categories_text).like(pattern),

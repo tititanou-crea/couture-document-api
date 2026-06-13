@@ -1,7 +1,7 @@
 from httpx import AsyncClient
 
 from app.schemas.metadata import PatternPhotoMetadataResponse, PhotoMetadataResponse
-from app.tests.test_books import BOOK_PAYLOAD
+from app.tests.test_books import BOOK_PAYLOAD, MAGAZINE_PAYLOAD
 
 
 async def test_metadata_lookup_finds_book_by_isbn(client: AsyncClient) -> None:
@@ -34,6 +34,38 @@ async def test_metadata_lookup_is_available_under_api_v1(client: AsyncClient) ->
 
     assert response.status_code == 200
     assert response.json()["title"] == BOOK_PAYLOAD["title"]
+
+
+async def test_metadata_lookup_finds_magazine_by_ean(client: AsyncClient) -> None:
+    await client.post("/api/v1/books", json=MAGAZINE_PAYLOAD)
+    client.headers.pop("Authorization")
+
+    response = await client.post(
+        "/api/v1/metadata",
+        json={"type": "magazine", "ean": MAGAZINE_PAYLOAD["ean"]},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["title"] == MAGAZINE_PAYLOAD["title"]
+    assert response.json()["ean"] == MAGAZINE_PAYLOAD["ean"]
+    assert response.json()["issueNumber"] == MAGAZINE_PAYLOAD["issue_number"]
+
+
+async def test_metadata_lookup_finds_magazine_by_title_and_issue(client: AsyncClient) -> None:
+    await client.post("/api/v1/books", json=MAGAZINE_PAYLOAD)
+    client.headers.pop("Authorization")
+
+    response = await client.post(
+        "/metadata",
+        json={
+            "type": "magazine",
+            "title": MAGAZINE_PAYLOAD["title"],
+            "dateNumero": MAGAZINE_PAYLOAD["issue_number"],
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json()["title"] == MAGAZINE_PAYLOAD["title"]
 
 
 async def test_metadata_lookup_returns_empty_response_when_not_found(

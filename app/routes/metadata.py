@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.auth import get_current_user
 from app.db.session import get_db_session
 from app.repositories.book_repository import BookRepository
-from app.schemas.book import normalize_isbn
+from app.schemas.book import normalize_ean, normalize_isbn
 from app.schemas.metadata import (
     MetadataLookupRequest,
     MetadataLookupResponse,
@@ -35,14 +35,35 @@ async def lookup_metadata(
     payload: MetadataLookupRequest,
     session: Annotated[AsyncSession, Depends(get_db_session)],
 ) -> MetadataLookupResponse | Response:
+    repository = BookRepository(session)
     if payload.type in {"livre", "book"} and payload.isbn:
-        book = await BookRepository(session).get_by_isbn(normalize_isbn(payload.isbn))
+        book = await repository.get_by_isbn(normalize_isbn(payload.isbn))
         if book is not None:
             return MetadataLookupResponse(
                 title=book.title,
                 authors=book.authors,
                 publisher=book.publisher,
                 description=book.description,
+                cover_url=book.cover_url,
+            )
+
+    if payload.type == "magazine":
+        book = None
+        if payload.ean:
+            book = await repository.get_by_ean(normalize_ean(payload.ean))
+        elif payload.title and payload.date_numero:
+            book = await repository.get_magazine_by_title_and_issue(
+                title=payload.title,
+                issue=payload.date_numero,
+            )
+        if book is not None:
+            return MetadataLookupResponse(
+                title=book.title,
+                publisher=book.publisher,
+                description=book.description,
+                ean=book.ean,
+                issue_number=book.issue_number,
+                published_year=str(book.published_date.year) if book.published_date else None,
                 cover_url=book.cover_url,
             )
 

@@ -54,6 +54,11 @@ class PatternFormat(StrEnum):
     BOTH = "both"
 
 
+class DocumentType(StrEnum):
+    BOOK = "book"
+    MAGAZINE = "magazine"
+
+
 class DocumentStatus(StrEnum):
     DRAFT = "draft"
     PENDING_VALIDATION = "pending_validation"
@@ -63,4 +68,3 @@ class DocumentStatus(StrEnum):
 class UserRole(StrEnum):
     ADMIN = "admin"
     VOLUNTEER = "volunteer"
-
