@@ -7,19 +7,17 @@ import { SectionCard } from "@/components/ui/SectionCard";
 import { TextArea } from "@/components/ui/TextArea";
 import { TextField } from "@/components/ui/TextField";
 import { CoverUpload } from "@/components/books/CoverUpload";
-import {
-  audienceOptions,
-  categoryOptions,
-  difficultyOptions,
-  projectOptions,
-} from "@/utils/bookOptions";
+import { audienceOptions, difficultyOptions, projectOptions } from "@/utils/bookOptions";
 import type { Pattern, PatternFormat, PatternPayload } from "@/types/pattern";
 
-const patternCategoryOptions = categoryOptions.filter((option) => option.value !== "technique") as {
+const patternCategoryOptions: {
   label: string;
   value: PatternPayload["main_categories"][number];
   hint?: string;
-}[];
+}[] = [
+  { label: "Vêtement", value: "clothing", hint: "Robes, jupes, hauts, pantalons, vestes..." },
+  { label: "Accessoire", value: "accessories", hint: "Sacs, pochettes, accessoires cheveux..." },
+];
 
 type PatternFormState = {
   modelName: string;

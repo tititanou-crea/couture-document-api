@@ -1,6 +1,6 @@
 import type { DifficultyLevel, DocumentStatus, MainCategory, ProjectType, TargetAudience } from "@/types/book";
 
-export type PatternMainCategory = Exclude<MainCategory, "technique">;
+export type PatternMainCategory = Extract<MainCategory, "clothing" | "accessories">;
 export type PatternFormat = "physical" | "digital" | "both";
 
 export type Pattern = {
