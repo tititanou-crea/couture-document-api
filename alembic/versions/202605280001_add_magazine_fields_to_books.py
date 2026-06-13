@@ -1,7 +1,7 @@
 """add magazine fields to books
 
 Revision ID: 202605280001
-Revises: 202605230002
+Revises: 202606130001
 Create Date: 2026-05-28 00:01:00
 """
 
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 from alembic import op
 
 revision: str = "202605280001"
-down_revision: str | None = "202605230002"
+down_revision: str | None = "202606130001"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
