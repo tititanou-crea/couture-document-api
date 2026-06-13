@@ -5,7 +5,18 @@ import urllib.request
 from typing import Any
 
 from app.core.config import settings
-from app.schemas.metadata import PhotoMetadataImage, PhotoMetadataResponse
+from app.core.enums import (
+    DifficultyLevel,
+    MainCategory,
+    PatternFormat,
+    ProjectType,
+    TargetAudience,
+)
+from app.schemas.metadata import (
+    PatternPhotoMetadataResponse,
+    PhotoMetadataImage,
+    PhotoMetadataResponse,
+)
 
 
 class PhotoMetadataError(RuntimeError):
@@ -83,6 +94,72 @@ async def extract_book_metadata_from_photos(
     )
 
 
+
+async def extract_pattern_metadata_from_photo(
+    *, photo: PhotoMetadataImage | None
+) -> PatternPhotoMetadataResponse:
+    if not settings.OPENAI_API_KEY:
+        raise PhotoMetadataError(
+            "L'extraction photo n'est pas encore configurée. Ajoutez OPENAI_API_KEY côté API."
+        )
+
+    if photo is None or not photo.data_url:
+        raise PhotoMetadataError("Ajoutez une photo du patron à analyser.")
+
+    payload = {
+        "model": settings.OPENAI_VISION_MODEL,
+        "input": [
+            {
+                "role": "user",
+                "content": [
+                    {
+                        "type": "input_text",
+                        "text": (
+                            "Analyse cette photo d'un patron de couture. Extrais uniquement les "
+                            "informations visibles ou très probables. Réponds en JSON strict avec "
+                            "les clés: modelName, designerName, format, description, "
+                            "difficultyLevels, targetAudiences, mainCategories, projectTypes, "
+                            "extractedText, confidence. format vaut physical, digital, both ou null. "
+                            "difficultyLevels contient uniquement beginner, intermediate, advanced. "
+                            "targetAudiences contient uniquement women, men, children, baby, plus_size. "
+                            "mainCategories contient uniquement clothing ou accessories. "
+                            "projectTypes contient uniquement dress, skirt, top, pants, jacket, coat, "
+                            "bag, pouch, hair_accessories, textile_decoration. "
+                            "confidence vaut high, medium ou low. N'invente pas une information "
+                            "absente ou illisible."
+                        ),
+                    },
+                    {
+                        "type": "input_image",
+                        "image_url": photo.data_url,
+                        "detail": "high",
+                    },
+                ],
+            }
+        ],
+        "max_output_tokens": 900,
+    }
+
+    response_data = _post_openai_response(payload)
+    raw_text = _extract_output_text(response_data)
+    parsed = _parse_json_object(raw_text)
+    return PatternPhotoMetadataResponse(
+        model_name=_clean_text(parsed.get("modelName")),
+        designer_name=_clean_text(parsed.get("designerName")),
+        format=_clean_enum(parsed.get("format"), PatternFormat),
+        description=_clean_text(parsed.get("description")),
+        difficulty_levels=_clean_enum_list(parsed.get("difficultyLevels"), DifficultyLevel),
+        target_audiences=_clean_enum_list(parsed.get("targetAudiences"), TargetAudience),
+        main_categories=[
+            category
+            for category in _clean_enum_list(parsed.get("mainCategories"), MainCategory)
+            if category in {MainCategory.CLOTHING, MainCategory.ACCESSORIES}
+        ],
+        project_types=_clean_enum_list(parsed.get("projectTypes"), ProjectType),
+        extracted_text=_clean_text(parsed.get("extractedText")) or raw_text,
+        confidence=_clean_confidence(parsed.get("confidence")),
+    )
+
 def _post_openai_response(payload: dict[str, Any]) -> dict[str, Any]:
     request = urllib.request.Request(
         "https://api.openai.com/v1/responses",
@@ -158,6 +235,27 @@ def _parse_positive_int(value: Any) -> int | None:
     except (TypeError, ValueError):
         return None
     return number if number > 0 else None
+
+
+
+def _clean_enum(value: Any, enum_class: type) -> Any | None:
+    if not isinstance(value, str):
+        return None
+    try:
+        return enum_class(value)
+    except ValueError:
+        return None
+
+
+def _clean_enum_list(value: Any, enum_class: type) -> list[Any]:
+    if not isinstance(value, list):
+        return []
+    cleaned = []
+    for item in value:
+        enum_value = _clean_enum(item, enum_class)
+        if enum_value is not None and enum_value not in cleaned:
+            cleaned.append(enum_value)
+    return cleaned
 
 
 def _clean_confidence(value: Any) -> str | None:

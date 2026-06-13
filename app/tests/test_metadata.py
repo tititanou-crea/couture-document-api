@@ -1,6 +1,6 @@
 from httpx import AsyncClient
 
-from app.schemas.metadata import PhotoMetadataResponse
+from app.schemas.metadata import PatternPhotoMetadataResponse, PhotoMetadataResponse
 from app.tests.test_books import BOOK_PAYLOAD
 
 
@@ -94,5 +94,49 @@ async def test_photo_metadata_extraction_prefills_book_fields(
         "pageCount": 128,
         "description": "Un livre de projets couture accessibles.",
         "extractedText": "Couture facile Jeanne Martin",
+        "confidence": "high",
+    }
+
+
+async def test_photo_metadata_extraction_prefills_pattern_fields(
+    client: AsyncClient,
+    monkeypatch,
+) -> None:
+    async def fake_extract_pattern_metadata_from_photo(*, photo):
+        assert photo.data_url.startswith("data:image/jpeg;base64,")
+        return PatternPhotoMetadataResponse(
+            model_name="Robe Magnolia",
+            designer_name="Atelier Couture",
+            format="both",
+            description="Une robe portefeuille fluide.",
+            difficulty_levels=["intermediate"],
+            target_audiences=["women"],
+            main_categories=["clothing"],
+            project_types=["dress"],
+            extracted_text="Robe Magnolia Atelier Couture",
+            confidence="high",
+        )
+
+    monkeypatch.setattr(
+        "app.routes.metadata.extract_pattern_metadata_from_photo",
+        fake_extract_pattern_metadata_from_photo,
+    )
+
+    response = await client.post(
+        "/api/v1/metadata/extract-pattern-from-photo",
+        json={"photo": {"dataUrl": "data:image/jpeg;base64,abc"}},
+    )
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "modelName": "Robe Magnolia",
+        "designerName": "Atelier Couture",
+        "format": "both",
+        "description": "Une robe portefeuille fluide.",
+        "difficultyLevels": ["intermediate"],
+        "targetAudiences": ["women"],
+        "mainCategories": ["clothing"],
+        "projectTypes": ["dress"],
+        "extractedText": "Robe Magnolia Atelier Couture",
         "confidence": "high",
     }
