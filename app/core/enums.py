@@ -48,6 +48,12 @@ class Technique(StrEnum):
     PATTERNMAKING = "patternmaking"
 
 
+class PatternFormat(StrEnum):
+    PHYSICAL = "physical"
+    DIGITAL = "digital"
+    BOTH = "both"
+
+
 class DocumentStatus(StrEnum):
     DRAFT = "draft"
     PENDING_VALIDATION = "pending_validation"

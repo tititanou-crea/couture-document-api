@@ -8,6 +8,7 @@ import {
   LogOut,
   PlusCircle,
   Search,
+  Shirt,
   User,
   Users,
 } from "lucide-react";
@@ -23,6 +24,7 @@ type AppLayoutProps = {
 const navigation = [
   { href: "/dashboard", label: "Accueil", icon: Home },
   { href: "/books", label: "Livres", icon: Library },
+  { href: "/patterns", label: "Patrons", icon: Shirt },
   { href: "/books/search", label: "Recherche", icon: Search },
   { href: "/books/add", label: "Ajouter", icon: PlusCircle },
   { href: "/profile", label: "Profil", icon: User },
