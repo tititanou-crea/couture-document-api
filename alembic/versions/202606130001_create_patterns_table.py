@@ -1,7 +1,7 @@
 """create patterns table
 
 Revision ID: 202606130001
-Revises: 202605280001
+Revises: 202605230002
 Create Date: 2026-06-13 00:01:00
 """
 
@@ -13,7 +13,7 @@ from sqlalchemy.dialects import postgresql
 from alembic import op
 
 revision: str = "202606130001"
-down_revision: str | None = "202605280001"
+down_revision: str | None = "202605230002"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
