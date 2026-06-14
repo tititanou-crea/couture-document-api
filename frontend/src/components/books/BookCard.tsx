@@ -28,7 +28,7 @@ export function BookCard({ book, onDelete }: BookCardProps) {
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <h2 className="text-2xl font-bold text-ink">{book.title || (book.document_type === "magazine" ? "Magazine sans nom" : "Livre sans titre")}</h2>
-              {book.subtitle ? <p className="mt-1 text-base text-stone-600">{book.subtitle}</p> : null}
+              {book.document_type === "book" && book.subtitle ? <p className="mt-1 text-base text-stone-600">{book.subtitle}</p> : null}
               {book.document_type === "magazine" ? (
                 <p className="mt-2 text-base font-semibold text-rosewood">
                   Magazine{book.issue_number ? ` - ${book.issue_number}` : ""}
@@ -58,9 +58,11 @@ export function BookCard({ book, onDelete }: BookCardProps) {
             ))}
           </div>
 
-          <p className="mt-4 line-clamp-2 text-base leading-7 text-stone-600">
-            {book.description || "Aucune description pour le moment."}
-          </p>
+          {book.document_type === "book" ? (
+            <p className="mt-4 line-clamp-2 text-base leading-7 text-stone-600">
+              {book.description || "Aucune description pour le moment."}
+            </p>
+          ) : null}
 
           {book.document_type === "magazine" && book.patterns?.length ? (
             <div className="mt-4 rounded-lg bg-linen p-3">

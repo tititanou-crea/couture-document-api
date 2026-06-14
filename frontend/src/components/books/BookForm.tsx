@@ -118,17 +118,26 @@ export function BookForm({ initialBook, documentType, submitLabel, onSubmit }: B
     setForm((current) => ({ ...current, [key]: value }));
   }
 
+  function updateIncludesPatterns(value: IncludesPatternsChoice) {
+    setForm((current) => ({
+      ...current,
+      includesPatterns: value,
+      patternSheetUrl: value === "yes" ? current.patternSheetUrl : null,
+      magazinePatterns: value === "yes" ? current.magazinePatterns : [],
+    }));
+  }
+
   function applyExtractedMetadata(metadata: ExtractedBookMetadata) {
     setForm((current) => ({
       ...current,
       title: current.title || metadata.title || "",
-      subtitle: current.subtitle || metadata.subtitle || "",
+      subtitle: isMagazine ? "" : current.subtitle || metadata.subtitle || "",
       authors: current.authors || metadata.authors?.join(", ") || "",
-      publisher: current.publisher || metadata.publisher || "",
+      publisher: isMagazine ? "" : current.publisher || metadata.publisher || "",
       isbn: current.isbn || metadata.isbn || "",
       publicationYear: current.publicationYear || metadata.publishedYear || "",
       pageCount: current.pageCount || (metadata.pageCount ? String(metadata.pageCount) : ""),
-      description: current.description || metadata.description || "",
+      description: isMagazine ? "" : current.description || metadata.description || "",
       coverUrl: current.coverUrl || metadata.coverUrl || null,
     }));
   }
@@ -143,14 +152,14 @@ export function BookForm({ initialBook, documentType, submitLabel, onSubmit }: B
     return {
       title: form.title.trim(),
       document_type: form.documentType,
-      subtitle: form.subtitle.trim() || null,
+      subtitle: isMagazine ? null : form.subtitle.trim() || null,
       authors: isMagazine
         ? []
         : form.authors
         .split(",")
         .map((author) => author.trim())
         .filter(Boolean),
-      publisher: form.publisher.trim() || null,
+      publisher: isMagazine ? null : form.publisher.trim() || null,
       isbn: isMagazine ? null : form.isbn.trim() || null,
       ean: isMagazine ? form.ean.trim() || null : null,
       issue_number: isMagazine ? form.issueNumber.trim() || null : null,
@@ -159,7 +168,11 @@ export function BookForm({ initialBook, documentType, submitLabel, onSubmit }: B
       language: "fr",
       cover_url: form.coverUrl,
       pattern_sheet_url: isMagazine ? form.patternSheetUrl : null,
-      description: form.description.trim() ? `${form.description.trim()}${notes}` : notes.trim() || null,
+      description: isMagazine
+        ? null
+        : form.description.trim()
+          ? `${form.description.trim()}${notes}`
+          : notes.trim() || null,
       categories: [],
       tags,
       difficulty_levels: form.difficulty_levels,
@@ -274,9 +287,9 @@ export function BookForm({ initialBook, documentType, submitLabel, onSubmit }: B
       >
         <div className="grid gap-4 md:grid-cols-3">
           <TextField label={isMagazine ? "Nom du magazine" : "Titre du livre"} value={form.title} onChange={(event) => update("title", event.target.value)} required placeholder={isMagazine ? "Ex. Burda Style" : "Ex. Couture facile pour tous"} />
-          <TextField label="Sous-titre" value={form.subtitle} onChange={(event) => update("subtitle", event.target.value)} placeholder="Ex. 20 projets pour débuter" />
+          {!isMagazine ? <TextField label="Sous-titre" value={form.subtitle} onChange={(event) => update("subtitle", event.target.value)} placeholder="Ex. 20 projets pour débuter" /> : null}
           {!isMagazine ? <TextField label="Auteur(s)" value={form.authors} onChange={(event) => update("authors", event.target.value)} placeholder="Nom, Prénom" help="S’il y a plusieurs auteurs, séparez-les par une virgule." /> : null}
-          <TextField label="Maison d’édition" value={form.publisher} onChange={(event) => update("publisher", event.target.value)} placeholder="Ex. Eyrolles" />
+          {!isMagazine ? <TextField label="Maison d’édition" value={form.publisher} onChange={(event) => update("publisher", event.target.value)} placeholder="Ex. Eyrolles" /> : null}
           {isMagazine ? (
             <>
               <TextField label="Numéro ou date" value={form.issueNumber} onChange={(event) => update("issueNumber", event.target.value)} placeholder="Ex. Mars 2026, n°289" />
@@ -305,7 +318,7 @@ export function BookForm({ initialBook, documentType, submitLabel, onSubmit }: B
               <RadioCards
                 title="Patrons inclus ?"
                 value={form.includesPatterns}
-                onChange={(value) => update("includesPatterns", value)}
+                onChange={updateIncludesPatterns}
                 options={[
                   { label: "Oui", value: "yes" },
                   { label: "Non", value: "no" },
@@ -343,24 +356,26 @@ export function BookForm({ initialBook, documentType, submitLabel, onSubmit }: B
         </div>
       </SectionCard>
 
-      <SectionCard title="3. Description" description="Une description courte suffit. L’important est d’aider une bénévole à savoir si le document lui convient.">
-        <div className="grid gap-4 md:grid-cols-2">
-          <TextArea label={isMagazine ? "Résumé du numéro" : "Résumé du livre"} value={form.description} onChange={(event) => update("description", event.target.value)} placeholder="Quelques phrases simples sur le contenu du document." />
-          <div>
-            <button type="button" className="mb-2 font-semibold text-rosewood underline-offset-4 hover:underline" onClick={() => setShowNotes((value) => !value)}>
-              {showNotes ? "Masquer les notes complémentaires" : "Ajouter des notes complémentaires"}
-            </button>
-            {showNotes ? <TextArea label="Notes complémentaires" value={form.notes} onChange={(event) => update("notes", event.target.value)} placeholder="État du livre, remarques internes, détails utiles..." /> : <div className="rounded-lg border border-dashed border-rosewood/20 bg-cream p-5 text-sm leading-6 text-stone-600">Les notes internes sont facultatives. Ouvrez ce bloc seulement si vous avez une remarque utile.</div>}
+      {!isMagazine ? (
+        <SectionCard title="3. Description" description="Une description courte suffit. L’important est d’aider une bénévole à savoir si le livre lui convient.">
+          <div className="grid gap-4 md:grid-cols-2">
+            <TextArea label="Résumé du livre" value={form.description} onChange={(event) => update("description", event.target.value)} placeholder="Quelques phrases simples sur le contenu du livre." />
+            <div>
+              <button type="button" className="mb-2 font-semibold text-rosewood underline-offset-4 hover:underline" onClick={() => setShowNotes((value) => !value)}>
+                {showNotes ? "Masquer les notes complémentaires" : "Ajouter des notes complémentaires"}
+              </button>
+              {showNotes ? <TextArea label="Notes complémentaires" value={form.notes} onChange={(event) => update("notes", event.target.value)} placeholder="État du livre, remarques internes, détails utiles..." /> : <div className="rounded-lg border border-dashed border-rosewood/20 bg-cream p-5 text-sm leading-6 text-stone-600">Les notes internes sont facultatives. Ouvrez ce bloc seulement si vous avez une remarque utile.</div>}
+            </div>
           </div>
-        </div>
-      </SectionCard>
+        </SectionCard>
+      ) : null}
 
-      <SectionCard title="4. Photo de la couverture" description="Ajoutez une photo pour rendre la recherche plus visuelle et plus agréable.">
+      <SectionCard title={isMagazine ? "3. Photo de la couverture" : "4. Photo de la couverture"} description="Ajoutez une photo pour rendre la recherche plus visuelle et plus agréable.">
         <CoverUpload value={form.coverUrl} onChange={(url) => update("coverUrl", url)} />
       </SectionCard>
 
-      {isMagazine ? (
-        <SectionCard title="5. Patrons du magazine" description="Ajoutez une planche globale si le magazine en propose une, puis créez les patrons du numéro depuis cette même page.">
+      {isMagazine && form.includesPatterns === "yes" ? (
+        <SectionCard title="4. Patrons du magazine" description="Ajoutez une planche globale si le magazine en propose une, puis créez les patrons du numéro depuis cette même page.">
           <div className="space-y-5">
             <div>
               <p className="label">Photo de la planche des modèles (facultatif)</p>
@@ -370,86 +385,80 @@ export function BookForm({ initialBook, documentType, submitLabel, onSubmit }: B
               </p>
             </div>
 
-            {form.includesPatterns === "yes" ? (
-              <div className="space-y-4">
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <p className="text-base text-stone-600">
-                    Chaque patron créé ici sera relié à ce magazine et pourra être retrouvé dans la liste des patrons.
-                  </p>
-                  <Button type="button" variant="secondary" icon={<PlusCircle aria-hidden size={20} />} onClick={addMagazinePattern}>
-                    Ajouter un patron
-                  </Button>
+            <div className="space-y-4">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-base text-stone-600">
+                  Chaque patron créé ici sera relié à ce magazine et pourra être retrouvé dans la liste des patrons.
+                </p>
+                <Button type="button" variant="secondary" icon={<PlusCircle aria-hidden size={20} />} onClick={addMagazinePattern}>
+                  Ajouter un patron
+                </Button>
+              </div>
+
+              {form.magazinePatterns.length === 0 ? (
+                <div className="rounded-lg border border-dashed border-rosewood/20 bg-cream p-5 text-base text-stone-600">
+                  Ajoutez au moins un patron si le magazine contient des modèles à coudre.
                 </div>
+              ) : null}
 
-                {form.magazinePatterns.length === 0 ? (
-                  <div className="rounded-lg border border-dashed border-rosewood/20 bg-cream p-5 text-base text-stone-600">
-                    Ajoutez au moins un patron si le magazine contient des modèles à coudre.
+              {form.magazinePatterns.map((pattern, index) => (
+                <div key={pattern.id} className="rounded-lg border border-rosewood/10 bg-white p-4">
+                  <div className="mb-4 flex items-center justify-between gap-3">
+                    <h3 className="text-lg font-bold text-ink">Patron {index + 1}</h3>
+                    <Button type="button" variant="quiet" aria-label="Retirer ce patron" onClick={() => removeMagazinePattern(pattern.id)}>
+                      <Trash2 aria-hidden size={19} />
+                    </Button>
                   </div>
-                ) : null}
 
-                {form.magazinePatterns.map((pattern, index) => (
-                  <div key={pattern.id} className="rounded-lg border border-rosewood/10 bg-white p-4">
-                    <div className="mb-4 flex items-center justify-between gap-3">
-                      <h3 className="text-lg font-bold text-ink">Patron {index + 1}</h3>
-                      <Button type="button" variant="quiet" aria-label="Retirer ce patron" onClick={() => removeMagazinePattern(pattern.id)}>
-                        <Trash2 aria-hidden size={19} />
-                      </Button>
-                    </div>
-
-                    <div className="grid gap-4 md:grid-cols-3">
-                      <TextField label="Nom descriptif" value={pattern.modelName} onChange={(event) => updateMagazinePattern(pattern.id, "modelName", event.target.value)} placeholder="Ex. Jupe en jean" />
-                      <TextField label="Repère sur la planche" value={pattern.identifier} onChange={(event) => updateMagazinePattern(pattern.id, "identifier", event.target.value)} placeholder="Ex. M1, 12A, modèle 104" />
-                      <label>
-                        <span className="label">Format</span>
-                        <select className="field" value={pattern.format} onChange={(event) => updateMagazinePattern(pattern.id, "format", event.target.value as MagazinePatternFormState["format"])}>
-                          <option value="physical">Physique</option>
-                          <option value="digital">Numérique</option>
-                          <option value="both">Physique et numérique</option>
-                        </select>
-                      </label>
-                      <div className="md:col-span-2">
-                        <TextArea label="Description courte" value={pattern.description} onChange={(event) => updateMagazinePattern(pattern.id, "description", event.target.value)} placeholder="Ex. Robe à volants enfant, pantalon large, veste courte..." />
-                      </div>
-                    </div>
-
-                    <div className="mt-4 grid gap-5 lg:grid-cols-4">
-                      <CheckboxGroup title="Niveau" options={difficultyOptions} values={pattern.difficulty_levels} onChange={(values) => updateMagazinePattern(pattern.id, "difficulty_levels", values)} />
-                      <div className="border-rosewood/10 lg:border-l lg:pl-4">
-                        <CheckboxGroup title="Public" options={audienceOptions} values={pattern.target_audiences} onChange={(values) => updateMagazinePattern(pattern.id, "target_audiences", values)} />
-                      </div>
-                      <div className="border-rosewood/10 lg:border-l lg:pl-4">
-                        <CheckboxGroup title="Catégorie" options={categoryOptions.filter((option) => option.value === "clothing" || option.value === "accessories")} values={pattern.main_categories} onChange={(values) => updateMagazinePattern(pattern.id, "main_categories", values as PatternMainCategory[])} />
-                      </div>
-                      <div className="border-rosewood/10 lg:border-l lg:pl-4">
-                        <CheckboxGroup title="Type de projet" options={projectOptions} values={pattern.project_types} onChange={(values) => updateMagazinePattern(pattern.id, "project_types", values)} />
-                      </div>
-                    </div>
-
-                    <div className="mt-4">
-                      <p className="label">
-                        Photo du modèle{form.patternSheetUrl ? " (facultatif)" : " (obligatoire sans planche globale)"}
-                      </p>
-                      <CoverUpload value={pattern.coverUrl} onChange={(url) => updateMagazinePattern(pattern.id, "coverUrl", url)} />
-                      <p className="mt-2 text-sm text-stone-500">
-                        {form.patternSheetUrl
-                          ? "Si aucune photo séparée n’est ajoutée, la planche du magazine sera utilisée."
-                          : "Comme aucune planche globale n’est renseignée, cette photo servira à identifier le patron."}
-                      </p>
+                  <div className="grid gap-4 md:grid-cols-3">
+                    <TextField label="Nom descriptif" value={pattern.modelName} onChange={(event) => updateMagazinePattern(pattern.id, "modelName", event.target.value)} placeholder="Ex. Jupe en jean" />
+                    <TextField label="Repère sur la planche" value={pattern.identifier} onChange={(event) => updateMagazinePattern(pattern.id, "identifier", event.target.value)} placeholder="Ex. M1, 12A, modèle 104" />
+                    <label>
+                      <span className="label">Format</span>
+                      <select className="field" value={pattern.format} onChange={(event) => updateMagazinePattern(pattern.id, "format", event.target.value as MagazinePatternFormState["format"])}>
+                        <option value="physical">Physique</option>
+                        <option value="digital">Numérique</option>
+                        <option value="both">Physique et numérique</option>
+                      </select>
+                    </label>
+                    <div className="md:col-span-2">
+                      <TextArea label="Description courte" value={pattern.description} onChange={(event) => updateMagazinePattern(pattern.id, "description", event.target.value)} placeholder="Ex. Robe à volants enfant, pantalon large, veste courte..." />
                     </div>
                   </div>
-                ))}
 
-                {missingRequiredPatternPhotos ? (
-                  <Notice type="error">
-                    Sans planche globale, chaque patron renseigné doit avoir sa propre photo.
-                  </Notice>
-                ) : null}
-              </div>
-            ) : (
-              <div className="rounded-lg border border-dashed border-rosewood/20 bg-cream p-5 text-base text-stone-600">
-                Indiquez “Oui” à “Patrons inclus ?” pour ajouter les patrons de ce magazine.
-              </div>
-            )}
+                  <div className="mt-4 grid gap-5 lg:grid-cols-4">
+                    <CheckboxGroup title="Niveau" options={difficultyOptions} values={pattern.difficulty_levels} onChange={(values) => updateMagazinePattern(pattern.id, "difficulty_levels", values)} />
+                    <div className="border-rosewood/10 lg:border-l lg:pl-4">
+                      <CheckboxGroup title="Public" options={audienceOptions} values={pattern.target_audiences} onChange={(values) => updateMagazinePattern(pattern.id, "target_audiences", values)} />
+                    </div>
+                    <div className="border-rosewood/10 lg:border-l lg:pl-4">
+                      <CheckboxGroup title="Catégorie" options={categoryOptions.filter((option) => option.value === "clothing" || option.value === "accessories")} values={pattern.main_categories} onChange={(values) => updateMagazinePattern(pattern.id, "main_categories", values as PatternMainCategory[])} />
+                    </div>
+                    <div className="border-rosewood/10 lg:border-l lg:pl-4">
+                      <CheckboxGroup title="Type de projet" options={projectOptions} values={pattern.project_types} onChange={(values) => updateMagazinePattern(pattern.id, "project_types", values)} />
+                    </div>
+                  </div>
+
+                  <div className="mt-4">
+                    <p className="label">
+                      Photo du modèle{form.patternSheetUrl ? " (facultatif)" : " (obligatoire sans planche globale)"}
+                    </p>
+                    <CoverUpload value={pattern.coverUrl} onChange={(url) => updateMagazinePattern(pattern.id, "coverUrl", url)} />
+                    <p className="mt-2 text-sm text-stone-500">
+                      {form.patternSheetUrl
+                        ? "Si aucune photo séparée n’est ajoutée, la planche du magazine sera utilisée."
+                        : "Comme aucune planche globale n’est renseignée, cette photo servira à identifier le patron."}
+                    </p>
+                  </div>
+                </div>
+              ))}
+
+              {missingRequiredPatternPhotos ? (
+                <Notice type="error">
+                  Sans planche globale, chaque patron renseigné doit avoir sa propre photo.
+                </Notice>
+              ) : null}
+            </div>
           </div>
         </SectionCard>
       ) : null}
