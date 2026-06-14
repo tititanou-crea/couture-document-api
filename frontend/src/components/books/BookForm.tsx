@@ -64,13 +64,14 @@ type MagazinePatternFormState = {
 
 type BookFormProps = {
   initialBook?: Book | null;
+  documentType?: BookPayload["document_type"];
   submitLabel: string;
   onSubmit: (payload: BookPayload) => Promise<void>;
 };
 
-function initialState(book?: Book | null): BookFormState {
+function initialState(book?: Book | null, documentType?: BookPayload["document_type"]): BookFormState {
   return {
-    documentType: book?.document_type ?? "book",
+    documentType: documentType ?? book?.document_type ?? "book",
     title: book?.title ?? "",
     subtitle: book?.subtitle ?? "",
     authors: book?.authors.join(", ") ?? "",
@@ -97,8 +98,8 @@ function initialState(book?: Book | null): BookFormState {
   };
 }
 
-export function BookForm({ initialBook, submitLabel, onSubmit }: BookFormProps) {
-  const [form, setForm] = useState<BookFormState>(() => initialState(initialBook));
+export function BookForm({ initialBook, documentType, submitLabel, onSubmit }: BookFormProps) {
+  const [form, setForm] = useState<BookFormState>(() => initialState(initialBook, documentType));
   const [showNotes, setShowNotes] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -247,24 +248,25 @@ export function BookForm({ initialBook, submitLabel, onSubmit }: BookFormProps) 
       {error ? <Notice type="error">{error}</Notice> : null}
 
       <SectionCard
-        title="Assistant photo"
-        description="Prenez la couverture et le dos du document pour préremplir automatiquement les informations disponibles."
+        title={isMagazine ? "Assistant couverture" : "Assistant photo"}
+        description={
+          isMagazine
+            ? "Ajoutez la couverture avant du magazine pour préremplir les informations visibles."
+            : "Prenez la couverture et le dos du livre pour préremplir automatiquement les informations disponibles."
+        }
       >
-        <BookPhotoAssistant onApply={applyExtractedMetadata} />
+        <BookPhotoAssistant mode={isMagazine ? "magazine" : "book"} onApply={applyExtractedMetadata} />
       </SectionCard>
 
       <SectionCard
-        title="1. Informations principales"
-        description="Commencez par les informations visibles sur la couverture ou les premières pages. Vous pourrez toujours compléter plus tard."
+        title={isMagazine ? "1. Identifier le numéro" : "1. Informations principales"}
+        description={
+          isMagazine
+            ? "Renseignez le nom du magazine et le numéro exact pour pouvoir le retrouver facilement."
+            : "Commencez par les informations visibles sur la couverture ou les premières pages. Vous pourrez toujours compléter plus tard."
+        }
       >
         <div className="grid gap-4 md:grid-cols-3">
-          <label>
-            <span className="label">Type</span>
-            <select className="field" value={form.documentType} onChange={(event) => update("documentType", event.target.value as BookFormState["documentType"])}>
-              <option value="book">Livre</option>
-              <option value="magazine">Magazine</option>
-            </select>
-          </label>
           <TextField label={isMagazine ? "Nom du magazine" : "Titre du livre"} value={form.title} onChange={(event) => update("title", event.target.value)} required placeholder={isMagazine ? "Ex. Burda Style" : "Ex. Couture facile pour tous"} />
           <TextField label="Sous-titre" value={form.subtitle} onChange={(event) => update("subtitle", event.target.value)} placeholder="Ex. 20 projets pour débuter" />
           {!isMagazine ? <TextField label="Auteur(s)" value={form.authors} onChange={(event) => update("authors", event.target.value)} placeholder="Nom, Prénom" help="S’il y a plusieurs auteurs, séparez-les par une virgule." /> : null}
@@ -282,10 +284,17 @@ export function BookForm({ initialBook, submitLabel, onSubmit }: BookFormProps) 
         </div>
       </SectionCard>
 
-      <SectionCard title="2. Informations couture" description="Ces choix permettent aux bénévoles de retrouver facilement un livre adapté à une envie ou à un niveau.">
+      <SectionCard
+        title="2. Informations couture"
+        description={
+          isMagazine
+            ? "Ces choix décrivent le contenu global du numéro, notamment les techniques ou zooms particuliers."
+            : "Ces choix permettent aux bénévoles de retrouver facilement un livre adapté à une envie ou à un niveau."
+        }
+      >
         <div className="grid gap-5 lg:grid-cols-6">
           <div className="lg:col-span-1">
-            <CheckboxGroup title="Niveaux présents dans le livre" options={difficultyOptions} values={form.difficulty_levels} onChange={(values) => update("difficulty_levels", values)} />
+            <CheckboxGroup title={isMagazine ? "Niveaux présents" : "Niveaux présents dans le livre"} options={difficultyOptions} values={form.difficulty_levels} onChange={(values) => update("difficulty_levels", values)} />
             <div className="mt-5">
               <RadioCards
                 title="Patrons inclus ?"
@@ -303,7 +312,7 @@ export function BookForm({ initialBook, submitLabel, onSubmit }: BookFormProps) 
             <CheckboxGroup title="Public concerné" options={audienceOptions} values={form.target_audiences} onChange={(values) => update("target_audiences", values)} />
           </div>
           <div className="border-rosewood/10 lg:col-span-1 lg:border-l lg:pl-4">
-            <CheckboxGroup title="Catégorie principale du livre" options={categoryOptions} values={form.main_categories} onChange={(values) => update("main_categories", values)} />
+            <CheckboxGroup title={isMagazine ? "Catégorie principale" : "Catégorie principale du livre"} options={categoryOptions} values={form.main_categories} onChange={(values) => update("main_categories", values)} />
           </div>
           <div className="border-rosewood/10 lg:col-span-1 lg:border-l lg:pl-4">
             <CheckboxGroup title="Types de projets abordés" options={projectOptions} values={form.project_types} onChange={(values) => update("project_types", values)} />

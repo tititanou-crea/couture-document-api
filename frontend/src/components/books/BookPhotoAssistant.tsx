@@ -6,12 +6,13 @@ import { extractBookMetadataFromPhotos, type ExtractedBookMetadata } from "@/ser
 import { uploadCover } from "@/services/upload";
 
 type BookPhotoAssistantProps = {
+  mode?: "book" | "magazine";
   onApply: (metadata: ExtractedBookMetadata) => void;
 };
 
 type PhotoSide = "cover" | "back";
 
-export function BookPhotoAssistant({ onApply }: BookPhotoAssistantProps) {
+export function BookPhotoAssistant({ mode = "book", onApply }: BookPhotoAssistantProps) {
   const [coverPhoto, setCoverPhoto] = useState<File | null>(null);
   const [backPhoto, setBackPhoto] = useState<File | null>(null);
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
@@ -21,6 +22,7 @@ export function BookPhotoAssistant({ onApply }: BookPhotoAssistantProps) {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
+  const isMagazine = mode === "magazine";
   const hasPhotos = Boolean(coverPhoto || backPhoto);
 
   function handleInputChange(side: PhotoSide, event: ChangeEvent<HTMLInputElement>) {
@@ -44,7 +46,11 @@ export function BookPhotoAssistant({ onApply }: BookPhotoAssistantProps) {
 
   async function handleAnalyzePhotos() {
     if (!hasPhotos) {
-      setError("Ajoutez au moins une photo du livre avant de lancer l’analyse.");
+      setError(
+        isMagazine
+          ? "Ajoutez une photo de la couverture du magazine avant de lancer l’analyse."
+          : "Ajoutez au moins une photo du livre avant de lancer l’analyse."
+      );
       return;
     }
 
@@ -55,7 +61,7 @@ export function BookPhotoAssistant({ onApply }: BookPhotoAssistantProps) {
     try {
       const [uploadedCover, extractedMetadata] = await Promise.all([
         coverPhoto ? uploadCover(coverPhoto) : Promise.resolve(null),
-        extractBookMetadataFromPhotos({ coverPhoto, backPhoto }),
+        extractBookMetadataFromPhotos({ coverPhoto, backPhoto: isMagazine ? null : backPhoto }),
       ]);
 
       const metadata = {
@@ -88,24 +94,28 @@ export function BookPhotoAssistant({ onApply }: BookPhotoAssistantProps) {
   return (
     <div className="space-y-4">
       <Notice>
-        Prenez la couverture et le dos du livre. L’analyse lit les textes visibles pour proposer un préremplissage : titre, sous-titre, auteur, éditeur, ISBN, année, nombre de pages et résumé.
+        {isMagazine
+          ? "Ajoutez uniquement la couverture avant du magazine. L’analyse peut proposer le nom du magazine, le sous-titre, l’éditeur, l’année et une photo de couverture."
+          : "Prenez la couverture et le dos du livre. L’analyse lit les textes visibles pour proposer un préremplissage : titre, sous-titre, auteur, éditeur, ISBN, année, nombre de pages et résumé."}
       </Notice>
 
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className={`grid gap-4 ${isMagazine ? "" : "md:grid-cols-2"}`}>
         <PhotoPicker
           title="Couverture"
-          description="Titre, sous-titre, auteur, collection"
+          description={isMagazine ? "Nom du magazine, numéro, collection" : "Titre, sous-titre, auteur, collection"}
           preview={coverPreview}
           side="cover"
           onChange={handleInputChange}
         />
-        <PhotoPicker
-          title="Dos du livre"
-          description="Résumé, ISBN, éditeur, nombre de pages"
-          preview={backPreview}
-          side="back"
-          onChange={handleInputChange}
-        />
+        {!isMagazine ? (
+          <PhotoPicker
+            title="Dos du livre"
+            description="Résumé, ISBN, éditeur, nombre de pages"
+            preview={backPreview}
+            side="back"
+            onChange={handleInputChange}
+          />
+        ) : null}
       </div>
 
       <div className="flex flex-wrap items-center gap-3">
@@ -115,7 +125,11 @@ export function BookPhotoAssistant({ onApply }: BookPhotoAssistantProps) {
           disabled={!hasPhotos || loading}
           onClick={handleAnalyzePhotos}
         >
-          {loading ? "Analyse des photos..." : "Extraire les informations"}
+          {loading
+            ? isMagazine
+              ? "Analyse de la couverture..."
+              : "Analyse des photos..."
+            : "Extraire les informations"}
         </Button>
         {hasPhotos ? (
           <Button type="button" variant="quiet" icon={<Trash2 aria-hidden size={18} />} onClick={clearPhotos}>

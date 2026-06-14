@@ -23,11 +23,23 @@ export default function EditBookPage() {
     router.push("/books");
   }
 
+  const isMagazine = book.data?.document_type === "magazine";
+
   return (
-    <AppLayout title="Modifier un livre" subtitle="Corrigez uniquement ce qui est utile. Les fiches peuvent évoluer doucement.">
+    <AppLayout
+      title={isMagazine ? "Modifier un magazine" : "Modifier un livre"}
+      subtitle="Corrigez uniquement ce qui est utile. Les fiches peuvent évoluer doucement."
+    >
       {book.error ? <Notice type="error">{book.error}</Notice> : null}
-      {book.loading ? <p className="text-lg font-semibold text-rosewood">Chargement du livre...</p> : null}
-      {book.data ? <BookForm initialBook={book.data} submitLabel="Enregistrer les modifications" onSubmit={handleSubmit} /> : null}
+      {book.loading ? <p className="text-lg font-semibold text-rosewood">Chargement...</p> : null}
+      {book.data ? (
+        <BookForm
+          initialBook={book.data}
+          documentType={book.data.document_type}
+          submitLabel="Enregistrer les modifications"
+          onSubmit={handleSubmit}
+        />
+      ) : null}
     </AppLayout>
   );
 }

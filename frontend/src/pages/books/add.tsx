@@ -14,7 +14,7 @@ export default function AddBookPage() {
 
   return (
     <AppLayout title="Ajouter un livre" subtitle="Une seule page, organisée en sections claires. Remplissez ce que vous savez, le reste pourra attendre.">
-      <BookForm submitLabel="Enregistrer le livre" onSubmit={handleSubmit} />
+      <BookForm documentType="book" submitLabel="Enregistrer le livre" onSubmit={handleSubmit} />
     </AppLayout>
   );
 }

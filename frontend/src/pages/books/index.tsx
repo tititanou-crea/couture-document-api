@@ -25,7 +25,10 @@ export default function BooksPage() {
 
   return (
     <AppLayout title="Liste des livres" subtitle="Toutes les fiches de la bibliothèque, prêtes à être consultées ou corrigées.">
-      <div className="mb-5 flex justify-end">
+      <div className="mb-5 flex flex-wrap justify-end gap-3">
+        <Link href="/magazines/add">
+          <Button variant="secondary" icon={<PlusCircle aria-hidden size={20} />}>Ajouter un magazine</Button>
+        </Link>
         <Link href="/books/add">
           <Button icon={<PlusCircle aria-hidden size={20} />}>Ajouter un livre</Button>
         </Link>
