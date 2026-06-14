@@ -1,4 +1,4 @@
-import { useMemo, useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import { PlusCircle, Save, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { CheckboxGroup } from "@/components/ui/CheckboxGroup";
@@ -51,7 +51,6 @@ type BookFormState = {
 type MagazinePatternFormState = {
   id: string;
   modelName: string;
-  designerName: string;
   identifier: string;
   format: "physical" | "digital" | "both";
   description: string;
@@ -105,7 +104,15 @@ export function BookForm({ initialBook, documentType, submitLabel, onSubmit }: B
   const [error, setError] = useState<string | null>(null);
 
   const isMagazine = form.documentType === "magazine";
-  const canSave = useMemo(() => form.title.trim().length > 0, [form.title]);
+  const filledMagazinePatterns = form.magazinePatterns.filter(
+    (pattern) => pattern.modelName.trim() || pattern.identifier.trim()
+  );
+  const missingRequiredPatternPhotos =
+    isMagazine &&
+    form.includesPatterns === "yes" &&
+    !form.patternSheetUrl &&
+    filledMagazinePatterns.some((pattern) => !pattern.coverUrl);
+  const canSave = form.title.trim().length > 0 && !missingRequiredPatternPhotos;
 
   function update<K extends keyof BookFormState>(key: K, value: BookFormState[K]) {
     setForm((current) => ({ ...current, [key]: value }));
@@ -168,7 +175,7 @@ export function BookForm({ initialBook, documentType, submitLabel, onSubmit }: B
               .filter((pattern) => pattern.modelName.trim() || pattern.identifier.trim())
               .map((pattern) => ({
                 model_name: pattern.modelName.trim() || null,
-                designer_name: pattern.designerName.trim() || form.title.trim() || null,
+                designer_name: form.title.trim() || null,
                 format: pattern.format,
                 description: pattern.description.trim() || null,
                 cover_url: pattern.coverUrl || form.patternSheetUrl,
@@ -194,7 +201,6 @@ export function BookForm({ initialBook, documentType, submitLabel, onSubmit }: B
         {
           id: crypto.randomUUID(),
           modelName: "",
-          designerName: current.title,
           identifier: "",
           format: "physical",
           description: "",
@@ -354,11 +360,14 @@ export function BookForm({ initialBook, documentType, submitLabel, onSubmit }: B
       </SectionCard>
 
       {isMagazine ? (
-        <SectionCard title="5. Patrons du magazine" description="Ajoutez la planche des modèles, puis créez les patrons du numéro depuis cette même page.">
+        <SectionCard title="5. Patrons du magazine" description="Ajoutez une planche globale si le magazine en propose une, puis créez les patrons du numéro depuis cette même page.">
           <div className="space-y-5">
             <div>
-              <p className="label">Photo de la planche des modèles</p>
+              <p className="label">Photo de la planche des modèles (facultatif)</p>
               <CoverUpload value={form.patternSheetUrl} onChange={(url) => update("patternSheetUrl", url)} />
+              <p className="mt-2 text-sm text-stone-500">
+                Si le magazine n’a pas de planche globale, ajoutez une photo pour chaque patron ci-dessous.
+              </p>
             </div>
 
             {form.includesPatterns === "yes" ? (
@@ -390,7 +399,6 @@ export function BookForm({ initialBook, documentType, submitLabel, onSubmit }: B
                     <div className="grid gap-4 md:grid-cols-3">
                       <TextField label="Nom descriptif" value={pattern.modelName} onChange={(event) => updateMagazinePattern(pattern.id, "modelName", event.target.value)} placeholder="Ex. Jupe en jean" />
                       <TextField label="Repère sur la planche" value={pattern.identifier} onChange={(event) => updateMagazinePattern(pattern.id, "identifier", event.target.value)} placeholder="Ex. M1, 12A, modèle 104" />
-                      <TextField label="Créateur / éditeur" value={pattern.designerName} onChange={(event) => updateMagazinePattern(pattern.id, "designerName", event.target.value)} placeholder={form.title || "Ex. Burda Style"} />
                       <label>
                         <span className="label">Format</span>
                         <select className="field" value={pattern.format} onChange={(event) => updateMagazinePattern(pattern.id, "format", event.target.value as MagazinePatternFormState["format"])}>
@@ -418,14 +426,24 @@ export function BookForm({ initialBook, documentType, submitLabel, onSubmit }: B
                     </div>
 
                     <div className="mt-4">
-                      <p className="label">Photo propre à ce patron</p>
+                      <p className="label">
+                        Photo du modèle{form.patternSheetUrl ? " (facultatif)" : " (obligatoire sans planche globale)"}
+                      </p>
                       <CoverUpload value={pattern.coverUrl} onChange={(url) => updateMagazinePattern(pattern.id, "coverUrl", url)} />
                       <p className="mt-2 text-sm text-stone-500">
-                        Si aucune photo séparée n’est ajoutée, la planche du magazine sera utilisée.
+                        {form.patternSheetUrl
+                          ? "Si aucune photo séparée n’est ajoutée, la planche du magazine sera utilisée."
+                          : "Comme aucune planche globale n’est renseignée, cette photo servira à identifier le patron."}
                       </p>
                     </div>
                   </div>
                 ))}
+
+                {missingRequiredPatternPhotos ? (
+                  <Notice type="error">
+                    Sans planche globale, chaque patron renseigné doit avoir sa propre photo.
+                  </Notice>
+                ) : null}
               </div>
             ) : (
               <div className="rounded-lg border border-dashed border-rosewood/20 bg-cream p-5 text-base text-stone-600">

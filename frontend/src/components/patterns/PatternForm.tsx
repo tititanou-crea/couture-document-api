@@ -65,15 +65,24 @@ export function PatternForm({ initialPattern, submitLabel, onSubmit }: PatternFo
   const [form, setForm] = useState<PatternFormState>(() => initialState(initialPattern));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const isMagazinePattern = Boolean(initialPattern?.source_magazine);
+  const sourceMagazineName = initialPattern?.source_magazine?.title ?? "";
 
   const canSave = useMemo(
     () =>
       form.modelName.trim().length > 0 &&
-      form.designerName.trim().length > 0 &&
+      (isMagazinePattern || form.designerName.trim().length > 0) &&
       Boolean(form.format) &&
       form.description.trim().length > 0 &&
       Boolean(form.coverUrl),
-    [form.coverUrl, form.description, form.designerName, form.format, form.modelName]
+    [
+      form.coverUrl,
+      form.description,
+      form.designerName,
+      form.format,
+      form.modelName,
+      isMagazinePattern,
+    ]
   );
 
   function update<K extends keyof PatternFormState>(key: K, value: PatternFormState[K]) {
@@ -83,7 +92,7 @@ export function PatternForm({ initialPattern, submitLabel, onSubmit }: PatternFo
   function buildPayload(): PatternPayload {
     return {
       model_name: form.modelName.trim(),
-      designer_name: form.designerName.trim() || null,
+      designer_name: isMagazinePattern ? sourceMagazineName || null : form.designerName.trim() || null,
       format: form.format || null,
       description: form.description.trim() || null,
       cover_url: form.coverUrl,
@@ -104,7 +113,9 @@ export function PatternForm({ initialPattern, submitLabel, onSubmit }: PatternFo
     setForm((current) => ({
       ...current,
       modelName: current.modelName || metadata.modelName || "",
-      designerName: current.designerName || metadata.designerName || "",
+      designerName: isMagazinePattern
+        ? sourceMagazineName
+        : current.designerName || metadata.designerName || "",
       format: current.format || metadata.format || "",
       description: current.description || metadata.description || "",
       coverUrl: current.coverUrl || metadata.coverUrl || null,
@@ -160,11 +171,17 @@ export function PatternForm({ initialPattern, submitLabel, onSubmit }: PatternFo
 
       <SectionCard
         title="1. Informations principales"
-        description="Renseignez le nom du modèle, son créateur et une courte description du patron."
+        description={
+          isMagazinePattern
+            ? "Renseignez le nom du modèle, son repère dans le magazine et une courte description du patron."
+            : "Renseignez le nom du modèle, son créateur et une courte description du patron."
+        }
       >
         <div className="grid gap-4 md:grid-cols-2">
           <TextField label="Nom du modèle" value={form.modelName} onChange={(event) => update("modelName", event.target.value)} required placeholder="Ex. Robe Magnolia" />
-          <TextField label="Créateur / éditeur" value={form.designerName} onChange={(event) => update("designerName", event.target.value)} required placeholder="Ex. Atelier Couture ou Burda Style" />
+          {!isMagazinePattern ? (
+            <TextField label="Créateur / éditeur" value={form.designerName} onChange={(event) => update("designerName", event.target.value)} required placeholder="Ex. Atelier Couture ou Burda Style" />
+          ) : null}
           <label>
             <span className="label">Format</span>
             <select className="field" value={form.format} onChange={(event) => update("format", event.target.value as PatternFormState["format"])} required>
