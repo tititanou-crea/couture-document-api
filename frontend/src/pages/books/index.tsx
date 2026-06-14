@@ -23,6 +23,8 @@ export default function BooksPage() {
     books.run(() => listBooks()).catch(() => undefined);
   }
 
+  const bookItems = books.data?.items.filter((book) => book.document_type === "book") ?? [];
+
   return (
     <AppLayout title="Liste des livres" subtitle="Toutes les fiches de la bibliothèque, prêtes à être consultées ou corrigées.">
       <div className="mb-5 flex flex-wrap justify-end gap-3">
@@ -38,10 +40,10 @@ export default function BooksPage() {
       {books.loading ? <p className="text-lg font-semibold text-rosewood">Chargement des livres...</p> : null}
 
       <div className="space-y-4">
-        {books.data?.items.map((book) => <BookCard key={book.id} book={book} onDelete={handleDelete} />)}
+        {bookItems.map((book) => <BookCard key={book.id} book={book} onDelete={handleDelete} />)}
       </div>
 
-      {!books.loading && books.data?.items.length === 0 ? (
+      {!books.loading && bookItems.length === 0 ? (
         <EmptyState title="Aucun livre pour le moment">Ajoutez le premier livre pour commencer la bibliothèque BiblioCouture.</EmptyState>
       ) : null}
     </AppLayout>

@@ -6,6 +6,7 @@ import {
   Home,
   Library,
   LogOut,
+  Newspaper,
   PlusCircle,
   Search,
   Shirt,
@@ -24,6 +25,7 @@ type AppLayoutProps = {
 const navigation = [
   { href: "/dashboard", label: "Accueil", icon: Home },
   { href: "/books", label: "Livres", icon: Library },
+  { href: "/magazines", label: "Magazines", icon: Newspaper },
   { href: "/patterns", label: "Patrons", icon: Shirt },
   { href: "/books/search", label: "Recherche", icon: Search },
   { href: "/books/add", label: "Ajouter", icon: PlusCircle },

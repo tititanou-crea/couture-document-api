@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { BookPlus, Library, Search, Users } from "lucide-react";
+import { BookPlus, Library, Newspaper, Search, Users } from "lucide-react";
 import { AppLayout } from "@/layouts/AppLayout";
 import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/hooks/useAuth";
@@ -15,10 +15,20 @@ export default function DashboardPage() {
           <h2 className="mt-4 text-2xl font-bold">Ajouter un livre</h2>
           <p className="mt-2 text-base leading-7 text-stone-600">Une seule page claire, avec photo de couverture et informations couture.</p>
         </Link>
+        <Link href="/magazines/add" className="soft-panel block p-6 transition hover:-translate-y-0.5">
+          <Newspaper className="text-rosewood" size={34} aria-hidden />
+          <h2 className="mt-4 text-2xl font-bold">Ajouter un magazine</h2>
+          <p className="mt-2 text-base leading-7 text-stone-600">Créer un numéro et lier ses patrons en une seule saisie.</p>
+        </Link>
         <Link href="/books" className="soft-panel block p-6 transition hover:-translate-y-0.5">
           <Library className="text-rosewood" size={34} aria-hidden />
           <h2 className="mt-4 text-2xl font-bold">Voir les livres</h2>
           <p className="mt-2 text-base leading-7 text-stone-600">Consulter, corriger ou compléter les fiches déjà enregistrées.</p>
+        </Link>
+        <Link href="/magazines" className="soft-panel block p-6 transition hover:-translate-y-0.5">
+          <Newspaper className="text-rosewood" size={34} aria-hidden />
+          <h2 className="mt-4 text-2xl font-bold">Voir les magazines</h2>
+          <p className="mt-2 text-base leading-7 text-stone-600">Retrouver un numéro et les patrons qu’il contient.</p>
         </Link>
         <Link href="/books/search" className="soft-panel block p-6 transition hover:-translate-y-0.5">
           <Search className="text-rosewood" size={34} aria-hidden />
