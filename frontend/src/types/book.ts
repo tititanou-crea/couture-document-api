@@ -46,6 +46,7 @@ export type Book = {
   page_count?: number | null;
   language: string;
   cover_url?: string | null;
+  pattern_sheet_url?: string | null;
   categories: string[];
   tags: string[];
   difficulty_levels: DifficultyLevel[];
@@ -54,6 +55,13 @@ export type Book = {
   project_types: ProjectType[];
   techniques: Technique[];
   includes_patterns?: boolean | null;
+  patterns?: {
+    id: string;
+    model_name?: string | null;
+    designer_name?: string | null;
+    magazine_pattern_identifier?: string | null;
+    cover_url?: string | null;
+  }[];
   status: DocumentStatus;
   created_at: string;
   updated_at: string;
@@ -61,6 +69,18 @@ export type Book = {
 
 export type BookPayload = Omit<Book, "id" | "document_type" | "created_at" | "updated_at"> & {
   document_type?: DocumentType;
+  magazine_patterns?: {
+    model_name?: string | null;
+    designer_name?: string | null;
+    format?: "physical" | "digital" | "both" | null;
+    description?: string | null;
+    cover_url?: string | null;
+    magazine_pattern_identifier?: string | null;
+    difficulty_levels: DifficultyLevel[];
+    target_audiences: TargetAudience[];
+    main_categories: Extract<MainCategory, "clothing" | "accessories">[];
+    project_types: ProjectType[];
+  }[];
   created_by?: string | null;
   validated_by?: string | null;
   validated_at?: string | null;

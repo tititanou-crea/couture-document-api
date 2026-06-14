@@ -4,8 +4,10 @@ import uuid
 
 from sqlalchemy import Select, String, cast, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.models.book import Book
+from app.models.pattern import Pattern
 
 
 class BookRepository:
@@ -15,12 +17,19 @@ class BookRepository:
     async def list(self, *, limit: int, offset: int) -> tuple[list[Book], int]:
         total = await self._count(select(Book))
         result = await self.session.execute(
-            select(Book).order_by(Book.created_at.desc()).limit(limit).offset(offset)
+            select(Book)
+            .options(selectinload(Book.patterns))
+            .order_by(Book.created_at.desc())
+            .limit(limit)
+            .offset(offset)
         )
         return list(result.scalars().all()), total
 
     async def get(self, book_id: uuid.UUID) -> Book | None:
-        return await self.session.get(Book, book_id)
+        result = await self.session.execute(
+            select(Book).options(selectinload(Book.patterns)).where(Book.id == book_id)
+        )
+        return result.scalar_one_or_none()
 
     async def get_by_isbn(self, isbn: str) -> Book | None:
         result = await self.session.execute(select(Book).where(Book.isbn == isbn))
@@ -73,17 +82,23 @@ class BookRepository:
                 func.lower(Book.issue_number).like(pattern),
                 func.lower(Book.title).like(pattern),
                 func.lower(Book.publisher).like(pattern),
+                func.lower(Book.pattern_sheet_url).like(pattern),
                 func.lower(authors_text).like(pattern),
                 func.lower(tags_text).like(pattern),
                 func.lower(categories_text).like(pattern),
                 func.lower(main_categories_text).like(pattern),
                 func.lower(project_types_text).like(pattern),
                 func.lower(techniques_text).like(pattern),
+                Book.patterns.any(func.lower(Pattern.model_name).like(pattern)),
+                Book.patterns.any(func.lower(Pattern.magazine_pattern_identifier).like(pattern)),
             )
         )
         total = await self._count(statement)
         result = await self.session.execute(
-            statement.order_by(Book.created_at.desc()).limit(limit).offset(offset)
+            statement.options(selectinload(Book.patterns))
+            .order_by(Book.created_at.desc())
+            .limit(limit)
+            .offset(offset)
         )
         return list(result.scalars().all()), total
 

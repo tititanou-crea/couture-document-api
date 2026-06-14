@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.enums import DocumentStatus
 from app.core.exceptions import ConflictError, ResourceNotFoundError
 from app.models.book import Book
+from app.models.pattern import Pattern
 from app.repositories.book_repository import BookRepository
 from app.schemas.book import BookBase, BookCreate, BookUpdate, PaginatedBooks
 
@@ -14,9 +15,10 @@ from app.schemas.book import BookBase, BookCreate, BookUpdate, PaginatedBooks
 def _to_model_values(
     payload: BookCreate | BookUpdate, *, exclude_unset: bool = False
 ) -> dict[str, object]:
-    values = payload.model_dump(exclude_unset=exclude_unset)
-    if values.get("cover_url") is not None:
-        values["cover_url"] = str(values["cover_url"])
+    values = payload.model_dump(exclude_unset=exclude_unset, exclude={"magazine_patterns"})
+    for url_field in ("cover_url", "pattern_sheet_url"):
+        if values.get(url_field) is not None:
+            values[url_field] = str(values[url_field])
     return values
 
 
@@ -54,6 +56,8 @@ class BookService:
         book = Book(**values)
         try:
             created = await self.repository.create(book)
+            await self._create_magazine_patterns(created, payload)
+            await self.session.refresh(created, ["patterns"])
             await self.session.commit()
             return created
         except IntegrityError as exc:
@@ -117,6 +121,7 @@ class BookService:
             "project_types": book.project_types,
             "techniques": book.techniques,
             "includes_patterns": book.includes_patterns,
+            "pattern_sheet_url": book.pattern_sheet_url,
             "status": book.status,
             "created_by": book.created_by,
             "validated_by": book.validated_by,
@@ -124,3 +129,23 @@ class BookService:
         }
         merged.update(values)
         BookBase.model_validate(merged)
+
+    async def _create_magazine_patterns(self, book: Book, payload: BookCreate) -> None:
+        if book.document_type != "magazine" or not payload.magazine_patterns:
+            return
+
+        fallback_designer = book.title or book.publisher
+        for pattern_payload in payload.magazine_patterns:
+            pattern_values = pattern_payload.model_dump()
+            if pattern_values.get("cover_url") is not None:
+                pattern_values["cover_url"] = str(pattern_values["cover_url"])
+            if pattern_values.get("designer_name") is None and fallback_designer:
+                pattern_values["designer_name"] = fallback_designer
+            if pattern_values.get("cover_url") is None and book.pattern_sheet_url:
+                pattern_values["cover_url"] = book.pattern_sheet_url
+            pattern_values["source_magazine_id"] = book.id
+            pattern_values["status"] = book.status
+            pattern_values["created_by"] = book.created_by
+            pattern = Pattern(**pattern_values)
+            self.session.add(pattern)
+        await self.session.flush()

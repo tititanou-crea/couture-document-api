@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Edit3, Trash2 } from "lucide-react";
+import { Edit3, Shirt, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { CoverImage } from "@/components/ui/CoverImage";
 import { labelFor } from "@/utils/bookOptions";
@@ -27,9 +27,15 @@ export function BookCard({ book, onDelete }: BookCardProps) {
         <div className="p-5">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
-              <h2 className="text-2xl font-bold text-ink">{book.title || "Livre sans titre"}</h2>
+              <h2 className="text-2xl font-bold text-ink">{book.title || (book.document_type === "magazine" ? "Magazine sans nom" : "Livre sans titre")}</h2>
               {book.subtitle ? <p className="mt-1 text-base text-stone-600">{book.subtitle}</p> : null}
-              {book.authors.length ? <p className="mt-2 text-base font-semibold text-rosewood">{book.authors.join(", ")}</p> : null}
+              {book.document_type === "magazine" ? (
+                <p className="mt-2 text-base font-semibold text-rosewood">
+                  Magazine{book.issue_number ? ` - ${book.issue_number}` : ""}
+                </p>
+              ) : book.authors.length ? (
+                <p className="mt-2 text-base font-semibold text-rosewood">{book.authors.join(", ")}</p>
+              ) : null}
             </div>
             <div className="flex gap-2">
               <Link href={`/books/${book.id}/edit`} className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-white px-4 py-2 font-semibold text-rosewood ring-1 ring-rosewood/20 hover:bg-cream">
@@ -55,6 +61,23 @@ export function BookCard({ book, onDelete }: BookCardProps) {
           <p className="mt-4 line-clamp-2 text-base leading-7 text-stone-600">
             {book.description || "Aucune description pour le moment."}
           </p>
+
+          {book.document_type === "magazine" && book.patterns?.length ? (
+            <div className="mt-4 rounded-lg bg-linen p-3">
+              <p className="mb-2 flex items-center gap-2 text-sm font-bold text-rosewood">
+                <Shirt aria-hidden size={16} />
+                Patrons dans ce magazine
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {book.patterns.map((pattern) => (
+                  <Link key={pattern.id} href={`/patterns/${pattern.id}/edit`} className="rounded-full bg-white px-3 py-1 text-sm font-semibold text-ink ring-1 ring-rosewood/10 hover:text-rosewood">
+                    {pattern.magazine_pattern_identifier ? `${pattern.magazine_pattern_identifier} - ` : ""}
+                    {pattern.model_name || "Patron sans nom"}
+                  </Link>
+                ))}
+              </div>
+            </div>
+          ) : null}
         </div>
       </div>
     </article>

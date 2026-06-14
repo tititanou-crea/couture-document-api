@@ -10,6 +10,15 @@ export type Pattern = {
   format?: PatternFormat | null;
   description?: string | null;
   cover_url?: string | null;
+  magazine_pattern_identifier?: string | null;
+  source_magazine_id?: string | null;
+  source_magazine?: {
+    id: string;
+    title?: string | null;
+    issue_number?: string | null;
+    published_date?: string | null;
+    cover_url?: string | null;
+  } | null;
   difficulty_levels: DifficultyLevel[];
   target_audiences: TargetAudience[];
   main_categories: PatternMainCategory[];

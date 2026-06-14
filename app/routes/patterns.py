@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.auth import get_current_user
 from app.db.session import get_db_session
-from app.schemas.pattern import PatternCreate, PatternRead, PatternUpdate, PaginatedPatterns
+from app.schemas.pattern import PaginatedPatterns, PatternCreate, PatternRead, PatternUpdate
 from app.services.pattern_service import PatternService
 
 router = APIRouter(prefix="/patterns", tags=["Patterns"], dependencies=[Depends(get_current_user)])

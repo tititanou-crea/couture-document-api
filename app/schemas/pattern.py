@@ -1,5 +1,5 @@
 import uuid
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 
 from pydantic import AnyHttpUrl, BaseModel, ConfigDict, Field, field_validator, model_validator
 
@@ -19,6 +19,8 @@ class PatternBase(BaseModel):
     format: PatternFormat | None = None
     description: str | None = Field(default=None, max_length=2000)
     cover_url: AnyHttpUrl | None = None
+    magazine_pattern_identifier: str | None = Field(default=None, max_length=80)
+    source_magazine_id: uuid.UUID | None = None
     difficulty_levels: list[DifficultyLevel] = Field(default_factory=list)
     target_audiences: list[TargetAudience] = Field(default_factory=list)
     main_categories: list[MainCategory] = Field(default_factory=list)
@@ -69,6 +71,8 @@ class PatternUpdate(BaseModel):
     format: PatternFormat | None = None
     description: str | None = Field(default=None, max_length=2000)
     cover_url: AnyHttpUrl | None = None
+    magazine_pattern_identifier: str | None = Field(default=None, max_length=80)
+    source_magazine_id: uuid.UUID | None = None
     difficulty_levels: list[DifficultyLevel] | None = None
     target_audiences: list[TargetAudience] | None = None
     main_categories: list[MainCategory] | None = None
@@ -88,9 +92,20 @@ class PatternUpdate(BaseModel):
         return values
 
 
+class PatternMagazineSummary(BaseModel):
+    id: uuid.UUID
+    title: str | None = None
+    issue_number: str | None = None
+    published_date: date | None = None
+    cover_url: str | None = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class PatternRead(PatternBase):
     id: uuid.UUID
     cover_url: str | None = None
+    source_magazine: PatternMagazineSummary | None = None
     created_at: datetime
     updated_at: datetime
 

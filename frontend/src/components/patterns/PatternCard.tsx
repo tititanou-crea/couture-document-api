@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Edit3, Trash2 } from "lucide-react";
+import { BookOpen, Edit3, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { CoverImage } from "@/components/ui/CoverImage";
 import { labelFor } from "@/utils/bookOptions";
@@ -35,6 +35,7 @@ export function PatternCard({ pattern, onDelete }: PatternCardProps) {
               <h2 className="text-2xl font-bold text-ink">{pattern.model_name || "Patron sans nom"}</h2>
               {pattern.designer_name ? <p className="mt-2 text-base font-semibold text-rosewood">{pattern.designer_name}</p> : null}
               {pattern.format ? <p className="mt-1 text-sm font-semibold text-stone-600">{formatLabels[pattern.format]}</p> : null}
+              {pattern.magazine_pattern_identifier ? <p className="mt-1 text-sm font-semibold text-stone-600">Repère : {pattern.magazine_pattern_identifier}</p> : null}
             </div>
             <div className="flex gap-2">
               <Link href={`/patterns/${pattern.id}/edit`} className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-white px-4 py-2 font-semibold text-rosewood ring-1 ring-rosewood/20 hover:bg-cream">
@@ -60,6 +61,14 @@ export function PatternCard({ pattern, onDelete }: PatternCardProps) {
           <p className="mt-4 line-clamp-2 text-base leading-7 text-stone-600">
             {pattern.description || "Aucune description pour le moment."}
           </p>
+
+          {pattern.source_magazine ? (
+            <Link href={`/books/${pattern.source_magazine.id}/edit`} className="mt-4 inline-flex items-center gap-2 rounded-md bg-linen px-3 py-2 text-sm font-bold text-rosewood hover:bg-cream">
+              <BookOpen aria-hidden size={16} />
+              {pattern.source_magazine.title || "Magazine source"}
+              {pattern.source_magazine.issue_number ? ` - ${pattern.source_magazine.issue_number}` : ""}
+            </Link>
+          ) : null}
         </div>
       </div>
     </article>

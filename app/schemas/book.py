@@ -17,6 +17,7 @@ from app.core.enums import (
     DocumentStatus,
     DocumentType,
     MainCategory,
+    PatternFormat,
     ProjectType,
     TargetAudience,
     Technique,
@@ -101,6 +102,7 @@ class BookBase(BaseModel):
     project_types: list[ProjectType] = Field(default_factory=list)
     techniques: list[Technique] = Field(default_factory=list)
     includes_patterns: bool | None = None
+    pattern_sheet_url: AnyHttpUrl | None = None
     status: DocumentStatus = DocumentStatus.DRAFT
     created_by: uuid.UUID | None = None
     validated_by: uuid.UUID | None = None
@@ -163,8 +165,28 @@ class BookBase(BaseModel):
         return self
 
 
+class MagazinePatternCreate(BaseModel):
+    model_name: str | None = Field(default=None, min_length=1, max_length=255)
+    designer_name: str | None = Field(default=None, min_length=1, max_length=180)
+    format: PatternFormat | None = PatternFormat.PHYSICAL
+    description: str | None = Field(default=None, max_length=2000)
+    cover_url: AnyHttpUrl | None = None
+    magazine_pattern_identifier: str | None = Field(default=None, max_length=80)
+    difficulty_levels: list[DifficultyLevel] = Field(default_factory=list)
+    target_audiences: list[TargetAudience] = Field(default_factory=list)
+    main_categories: list[MainCategory] = Field(default_factory=list)
+    project_types: list[ProjectType] = Field(default_factory=list)
+
+    @field_validator("main_categories")
+    @classmethod
+    def reject_technique_category(cls, values: list[MainCategory]) -> list[MainCategory]:
+        if MainCategory.TECHNIQUE in values:
+            raise ValueError("La categorie technique n'est pas disponible pour les patrons")
+        return values
+
+
 class BookCreate(BookBase):
-    pass
+    magazine_patterns: list[MagazinePatternCreate] = Field(default_factory=list)
 
 
 class BookUpdate(BaseModel):
@@ -192,6 +214,7 @@ class BookUpdate(BaseModel):
     project_types: list[ProjectType] | None = None
     techniques: list[Technique] | None = None
     includes_patterns: bool | None = None
+    pattern_sheet_url: AnyHttpUrl | None = None
     status: DocumentStatus | None = None
     created_by: uuid.UUID | None = None
     validated_by: uuid.UUID | None = None
@@ -232,9 +255,21 @@ class BookUpdate(BaseModel):
         return _clean_string_list(values)
 
 
+class BookPatternSummary(BaseModel):
+    id: uuid.UUID
+    model_name: str | None = None
+    designer_name: str | None = None
+    magazine_pattern_identifier: str | None = None
+    cover_url: str | None = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class BookRead(BookBase):
     id: uuid.UUID
     cover_url: str | None = None
+    pattern_sheet_url: str | None = None
+    patterns: list[BookPatternSummary] = Field(default_factory=list)
     created_at: datetime
     updated_at: datetime
 

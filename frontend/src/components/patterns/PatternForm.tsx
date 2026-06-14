@@ -33,6 +33,7 @@ type PatternFormState = {
   format: PatternFormat | "";
   description: string;
   coverUrl: string | null;
+  magazinePatternIdentifier: string;
   difficulty_levels: PatternPayload["difficulty_levels"];
   target_audiences: PatternPayload["target_audiences"];
   main_categories: PatternPayload["main_categories"];
@@ -52,6 +53,7 @@ function initialState(pattern?: Pattern | null): PatternFormState {
     format: pattern?.format ?? "",
     description: pattern?.description ?? "",
     coverUrl: pattern?.cover_url ?? null,
+    magazinePatternIdentifier: pattern?.magazine_pattern_identifier ?? "",
     difficulty_levels: pattern?.difficulty_levels ?? [],
     target_audiences: pattern?.target_audiences ?? [],
     main_categories: pattern?.main_categories ?? [],
@@ -85,6 +87,8 @@ export function PatternForm({ initialPattern, submitLabel, onSubmit }: PatternFo
       format: form.format || null,
       description: form.description.trim() || null,
       cover_url: form.coverUrl,
+      magazine_pattern_identifier: form.magazinePatternIdentifier.trim() || null,
+      source_magazine_id: initialPattern?.source_magazine_id ?? null,
       difficulty_levels: form.difficulty_levels,
       target_audiences: form.target_audiences,
       main_categories: form.main_categories,
@@ -160,7 +164,7 @@ export function PatternForm({ initialPattern, submitLabel, onSubmit }: PatternFo
       >
         <div className="grid gap-4 md:grid-cols-2">
           <TextField label="Nom du modèle" value={form.modelName} onChange={(event) => update("modelName", event.target.value)} required placeholder="Ex. Robe Magnolia" />
-          <TextField label="Nom du créateur" value={form.designerName} onChange={(event) => update("designerName", event.target.value)} required placeholder="Ex. Atelier Couture" />
+          <TextField label="Créateur / éditeur" value={form.designerName} onChange={(event) => update("designerName", event.target.value)} required placeholder="Ex. Atelier Couture ou Burda Style" />
           <label>
             <span className="label">Format</span>
             <select className="field" value={form.format} onChange={(event) => update("format", event.target.value as PatternFormState["format"])} required>
@@ -170,7 +174,14 @@ export function PatternForm({ initialPattern, submitLabel, onSubmit }: PatternFo
               <option value="both">Physique et numérique</option>
             </select>
           </label>
+          <TextField label="Repère sur la planche" value={form.magazinePatternIdentifier} onChange={(event) => update("magazinePatternIdentifier", event.target.value)} placeholder="Ex. M1, 12A, modèle 104" />
         </div>
+        {initialPattern?.source_magazine ? (
+          <div className="mt-4 rounded-md bg-linen px-4 py-3 text-sm font-semibold text-rosewood">
+            Magazine source : {initialPattern.source_magazine.title || "Magazine"}{" "}
+            {initialPattern.source_magazine.issue_number ? `- ${initialPattern.source_magazine.issue_number}` : ""}
+          </div>
+        ) : null}
         <div className="mt-4">
           <TextArea label="Petite description" value={form.description} onChange={(event) => update("description", event.target.value)} required placeholder="Quelques phrases sur la coupe, le style ou les détails du patron." />
         </div>

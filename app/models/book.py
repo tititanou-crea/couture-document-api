@@ -1,7 +1,10 @@
+from __future__ import annotations
+
 from datetime import date
+from typing import TYPE_CHECKING
 
 from sqlalchemy import Boolean, Date, Integer, String, Text
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.enums import (
     DifficultyLevel,
@@ -15,6 +18,9 @@ from app.db.enum_types import EnumList
 from app.db.session import Base
 from app.db.types import StringList
 from app.models.mixins import BaseDocumentMixin, ValidationWorkflowMixin
+
+if TYPE_CHECKING:
+    from app.models.pattern import Pattern
 
 
 class Book(BaseDocumentMixin, ValidationWorkflowMixin, Base):
@@ -50,3 +56,9 @@ class Book(BaseDocumentMixin, ValidationWorkflowMixin, Base):
         EnumList(Technique, "technique"), nullable=False, default=list
     )
     includes_patterns: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
+    pattern_sheet_url: Mapped[str | None] = mapped_column(String(2048), nullable=True)
+    patterns: Mapped[list[Pattern]] = relationship(
+        back_populates="source_magazine",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )

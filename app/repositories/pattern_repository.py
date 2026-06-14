@@ -4,7 +4,9 @@ import uuid
 
 from sqlalchemy import Select, String, cast, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
+from app.models.book import Book
 from app.models.pattern import Pattern
 
 
@@ -15,12 +17,21 @@ class PatternRepository:
     async def list(self, *, limit: int, offset: int) -> tuple[list[Pattern], int]:
         total = await self._count(select(Pattern))
         result = await self.session.execute(
-            select(Pattern).order_by(Pattern.created_at.desc()).limit(limit).offset(offset)
+            select(Pattern)
+            .options(selectinload(Pattern.source_magazine))
+            .order_by(Pattern.created_at.desc())
+            .limit(limit)
+            .offset(offset)
         )
         return list(result.scalars().all()), total
 
     async def get(self, pattern_id: uuid.UUID) -> Pattern | None:
-        return await self.session.get(Pattern, pattern_id)
+        result = await self.session.execute(
+            select(Pattern)
+            .options(selectinload(Pattern.source_magazine))
+            .where(Pattern.id == pattern_id)
+        )
+        return result.scalar_one_or_none()
 
     async def create(self, pattern: Pattern) -> Pattern:
         self.session.add(pattern)
@@ -49,13 +60,19 @@ class PatternRepository:
                 func.lower(Pattern.designer_name).like(pattern),
                 func.lower(Pattern.format).like(pattern),
                 func.lower(Pattern.description).like(pattern),
+                func.lower(Pattern.magazine_pattern_identifier).like(pattern),
                 func.lower(main_categories_text).like(pattern),
                 func.lower(project_types_text).like(pattern),
+                Pattern.source_magazine.has(func.lower(Book.title).like(pattern)),
+                Pattern.source_magazine.has(func.lower(Book.issue_number).like(pattern)),
             )
         )
         total = await self._count(statement)
         result = await self.session.execute(
-            statement.order_by(Pattern.created_at.desc()).limit(limit).offset(offset)
+            statement.options(selectinload(Pattern.source_magazine))
+            .order_by(Pattern.created_at.desc())
+            .limit(limit)
+            .offset(offset)
         )
         return list(result.scalars().all()), total
 

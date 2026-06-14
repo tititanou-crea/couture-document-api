@@ -1,5 +1,11 @@
-from sqlalchemy import String, Text
-from sqlalchemy.orm import Mapped, mapped_column
+from __future__ import annotations
+
+import uuid
+from typing import TYPE_CHECKING
+
+from sqlalchemy import ForeignKey, String, Text
+from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.enums import (
     DifficultyLevel,
@@ -12,6 +18,9 @@ from app.db.enum_types import EnumList
 from app.db.session import Base
 from app.models.mixins import TimestampMixin, UUIDPrimaryKeyMixin, ValidationWorkflowMixin
 
+if TYPE_CHECKING:
+    from app.models.book import Book
+
 
 class Pattern(UUIDPrimaryKeyMixin, TimestampMixin, ValidationWorkflowMixin, Base):
     __tablename__ = "patterns"
@@ -21,6 +30,11 @@ class Pattern(UUIDPrimaryKeyMixin, TimestampMixin, ValidationWorkflowMixin, Base
     format: Mapped[PatternFormat | None] = mapped_column(String(20), nullable=True)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     cover_url: Mapped[str | None] = mapped_column(String(2048), nullable=True)
+    magazine_pattern_identifier: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    source_magazine_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("books.id", ondelete="CASCADE"), index=True, nullable=True
+    )
+    source_magazine: Mapped[Book | None] = relationship(back_populates="patterns")
     difficulty_levels: Mapped[list[str]] = mapped_column(
         EnumList(DifficultyLevel, "difficulty_level"), nullable=False, default=list
     )
