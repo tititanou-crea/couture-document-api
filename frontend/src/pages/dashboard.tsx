@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { BookPlus, Library, Newspaper, Search, Users } from "lucide-react";
+import { BookPlus, Library, Newspaper, Search, Shirt, Users } from "lucide-react";
 import { AppLayout } from "@/layouts/AppLayout";
 import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/hooks/useAuth";
@@ -20,6 +20,11 @@ export default function DashboardPage() {
           <h2 className="mt-4 text-2xl font-bold">Ajouter un magazine</h2>
           <p className="mt-2 text-base leading-7 text-stone-600">Créer un numéro et lier ses patrons en une seule saisie.</p>
         </Link>
+        <Link href="/patterns/add" className="soft-panel block p-6 transition hover:-translate-y-0.5">
+          <Shirt className="text-rosewood" size={34} aria-hidden />
+          <h2 className="mt-4 text-2xl font-bold">Ajouter un patron</h2>
+          <p className="mt-2 text-base leading-7 text-stone-600">Créer une fiche patron avec ses tailles, catégories et références.</p>
+        </Link>
         <Link href="/books" className="soft-panel block p-6 transition hover:-translate-y-0.5">
           <Library className="text-rosewood" size={34} aria-hidden />
           <h2 className="mt-4 text-2xl font-bold">Voir les livres</h2>
@@ -29,6 +34,11 @@ export default function DashboardPage() {
           <Newspaper className="text-rosewood" size={34} aria-hidden />
           <h2 className="mt-4 text-2xl font-bold">Voir les magazines</h2>
           <p className="mt-2 text-base leading-7 text-stone-600">Retrouver un numéro et les patrons qu’il contient.</p>
+        </Link>
+        <Link href="/patterns" className="soft-panel block p-6 transition hover:-translate-y-0.5">
+          <Shirt className="text-rosewood" size={34} aria-hidden />
+          <h2 className="mt-4 text-2xl font-bold">Voir les patrons</h2>
+          <p className="mt-2 text-base leading-7 text-stone-600">Parcourir tous les patrons et mettre à jour leurs informations.</p>
         </Link>
         <Link href="/books/search" className="soft-panel block p-6 transition hover:-translate-y-0.5">
           <Search className="text-rosewood" size={34} aria-hidden />

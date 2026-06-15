@@ -113,6 +113,34 @@ async def test_create_magazine_with_patterns(client: AsyncClient) -> None:
     assert magazines_response.json()["items"][0]["id"] == created["id"]
 
 
+async def test_search_magazines_by_french_pattern_project_type(client: AsyncClient) -> None:
+    response = await client.post(
+        "/api/v1/books",
+        json={
+            **MAGAZINE_PAYLOAD,
+            "magazine_patterns": [
+                {
+                    "model_name": "Modele 22",
+                    "magazine_pattern_identifier": "22",
+                    "description": "Un modele simple.",
+                    "difficulty_levels": ["beginner"],
+                    "target_audiences": ["women"],
+                    "main_categories": ["clothing"],
+                    "project_types": ["skirt"],
+                }
+            ],
+        },
+    )
+    created = response.json()
+
+    search_response = await client.get("/api/v1/books/search?q=jupe")
+
+    assert search_response.status_code == 200
+    payload = search_response.json()
+    assert payload["total"] == 1
+    assert payload["items"][0]["id"] == created["id"]
+
+
 async def test_reject_invalid_magazine_ean(client: AsyncClient) -> None:
     response = await client.post(
         "/api/v1/books",

@@ -8,6 +8,7 @@ from sqlalchemy.orm import selectinload
 
 from app.models.book import Book
 from app.models.pattern import Pattern
+from app.repositories.search_terms import expand_search_terms
 
 
 class BookRepository:
@@ -67,30 +68,70 @@ class BookRepository:
         await self.session.flush()
 
     async def search(self, *, query: str, limit: int, offset: int) -> tuple[list[Book], int]:
-        pattern = f"%{query.lower()}%"
+        search_patterns = [f"%{term}%" for term in expand_search_terms(query)]
         authors_text = self._text_from_list_column(Book.authors)
         tags_text = self._text_from_list_column(Book.tags)
         categories_text = self._text_from_list_column(Book.categories)
+        difficulty_levels_text = self._text_from_list_column(Book.difficulty_levels)
+        target_audiences_text = self._text_from_list_column(Book.target_audiences)
         main_categories_text = self._text_from_list_column(Book.main_categories)
         project_types_text = self._text_from_list_column(Book.project_types)
         techniques_text = self._text_from_list_column(Book.techniques)
+        pattern_difficulty_levels_text = self._text_from_list_column(Pattern.difficulty_levels)
+        pattern_target_audiences_text = self._text_from_list_column(Pattern.target_audiences)
+        pattern_main_categories_text = self._text_from_list_column(Pattern.main_categories)
+        pattern_project_types_text = self._text_from_list_column(Pattern.project_types)
         statement = select(Book).where(
             or_(
-                func.lower(Book.document_type).like(pattern),
-                func.lower(Book.isbn).like(pattern),
-                func.lower(Book.ean).like(pattern),
-                func.lower(Book.issue_number).like(pattern),
-                func.lower(Book.title).like(pattern),
-                func.lower(Book.publisher).like(pattern),
-                func.lower(Book.pattern_sheet_url).like(pattern),
-                func.lower(authors_text).like(pattern),
-                func.lower(tags_text).like(pattern),
-                func.lower(categories_text).like(pattern),
-                func.lower(main_categories_text).like(pattern),
-                func.lower(project_types_text).like(pattern),
-                func.lower(techniques_text).like(pattern),
-                Book.patterns.any(func.lower(Pattern.model_name).like(pattern)),
-                Book.patterns.any(func.lower(Pattern.magazine_pattern_identifier).like(pattern)),
+                *self._like_any(Book.document_type, search_patterns),
+                *self._like_any(Book.isbn, search_patterns),
+                *self._like_any(Book.ean, search_patterns),
+                *self._like_any(Book.issue_number, search_patterns),
+                *self._like_any(Book.title, search_patterns),
+                *self._like_any(Book.subtitle, search_patterns),
+                *self._like_any(Book.description, search_patterns),
+                *self._like_any(Book.publisher, search_patterns),
+                *self._like_any(Book.pattern_sheet_url, search_patterns),
+                *self._like_any(authors_text, search_patterns),
+                *self._like_any(tags_text, search_patterns),
+                *self._like_any(categories_text, search_patterns),
+                *self._like_any(difficulty_levels_text, search_patterns),
+                *self._like_any(target_audiences_text, search_patterns),
+                *self._like_any(main_categories_text, search_patterns),
+                *self._like_any(project_types_text, search_patterns),
+                *self._like_any(techniques_text, search_patterns),
+                *[
+                    Book.patterns.any(func.lower(Pattern.model_name).like(pattern))
+                    for pattern in search_patterns
+                ],
+                *[
+                    Book.patterns.any(func.lower(Pattern.designer_name).like(pattern))
+                    for pattern in search_patterns
+                ],
+                *[
+                    Book.patterns.any(func.lower(Pattern.description).like(pattern))
+                    for pattern in search_patterns
+                ],
+                *[
+                    Book.patterns.any(func.lower(Pattern.magazine_pattern_identifier).like(pattern))
+                    for pattern in search_patterns
+                ],
+                *[
+                    Book.patterns.any(func.lower(pattern_difficulty_levels_text).like(pattern))
+                    for pattern in search_patterns
+                ],
+                *[
+                    Book.patterns.any(func.lower(pattern_target_audiences_text).like(pattern))
+                    for pattern in search_patterns
+                ],
+                *[
+                    Book.patterns.any(func.lower(pattern_main_categories_text).like(pattern))
+                    for pattern in search_patterns
+                ],
+                *[
+                    Book.patterns.any(func.lower(pattern_project_types_text).like(pattern))
+                    for pattern in search_patterns
+                ],
             )
         )
         total = await self._count(statement)
@@ -112,3 +153,6 @@ class BookRepository:
         if bind.dialect.name == "postgresql":
             return func.array_to_string(column, " ")
         return cast(column, String)
+
+    def _like_any(self, column: object, patterns: list[str]) -> list[object]:
+        return [func.lower(column).like(pattern) for pattern in patterns]

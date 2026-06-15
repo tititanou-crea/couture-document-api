@@ -28,7 +28,7 @@ const navigation = [
   { href: "/magazines", label: "Magazines", icon: Newspaper },
   { href: "/patterns", label: "Patrons", icon: Shirt },
   { href: "/books/search", label: "Recherche", icon: Search },
-  { href: "/books/add", label: "Ajouter", icon: PlusCircle },
+  { href: "/add", label: "Ajouter", icon: PlusCircle },
   { href: "/profile", label: "Profil", icon: User },
   { href: "/volunteers", label: "Bénévoles", icon: Users, adminOnly: true },
   { href: "/help", label: "Aide", icon: CircleHelp },

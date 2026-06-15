@@ -67,6 +67,20 @@ async def test_search_patterns(client: AsyncClient) -> None:
     assert payload["items"][0]["model_name"] == PATTERN_PAYLOAD["model_name"]
 
 
+async def test_search_patterns_by_french_project_type(client: AsyncClient) -> None:
+    await client.post(
+        "/api/v1/patterns",
+        json={**PATTERN_PAYLOAD, "model_name": "Modele d'ete", "project_types": ["skirt"]},
+    )
+
+    response = await client.get("/api/v1/patterns/search?q=jupe")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["total"] == 1
+    assert payload["items"][0]["model_name"] == "Modele d'ete"
+
+
 async def test_update_pattern_to_validated_sets_validation_date(client: AsyncClient) -> None:
     create_response = await client.post("/api/v1/patterns", json=PATTERN_PAYLOAD)
     pattern_id = create_response.json()["id"]
