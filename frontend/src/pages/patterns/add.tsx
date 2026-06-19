@@ -13,7 +13,10 @@ export default function AddPatternPage() {
   }
 
   return (
-    <AppLayout title="Ajouter un patron" subtitle="Renseignez le modèle, son créateur, ses critères couture et une photo.">
+    <AppLayout
+      title="Ajouter un patron"
+      subtitle="Renseignez le modèle, son créateur, ses critères couture et jusqu’à deux photos."
+    >
       <PatternForm submitLabel="Enregistrer le patron" onSubmit={handleSubmit} />
     </AppLayout>
   );

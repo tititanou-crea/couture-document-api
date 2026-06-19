@@ -172,6 +172,7 @@ class MagazinePatternCreate(BaseModel):
     format: PatternFormat | None = PatternFormat.PHYSICAL
     description: str | None = Field(default=None, max_length=2000)
     cover_url: AnyHttpUrl | None = None
+    second_cover_url: AnyHttpUrl | None = None
     magazine_pattern_identifier: str | None = Field(default=None, max_length=80)
     difficulty_levels: list[DifficultyLevel] = Field(default_factory=list)
     target_audiences: list[TargetAudience] = Field(default_factory=list)
@@ -264,6 +265,7 @@ class BookPatternSummary(BaseModel):
     designer_name: str | None = None
     magazine_pattern_identifier: str | None = None
     cover_url: str | None = None
+    second_cover_url: str | None = None
 
     model_config = ConfigDict(from_attributes=True)
 

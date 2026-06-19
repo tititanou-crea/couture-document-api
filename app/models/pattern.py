@@ -30,6 +30,7 @@ class Pattern(UUIDPrimaryKeyMixin, TimestampMixin, ValidationWorkflowMixin, Base
     format: Mapped[PatternFormat | None] = mapped_column(String(20), nullable=True)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     cover_url: Mapped[str | None] = mapped_column(String(2048), nullable=True)
+    second_cover_url: Mapped[str | None] = mapped_column(String(2048), nullable=True)
     magazine_pattern_identifier: Mapped[str | None] = mapped_column(String(80), nullable=True)
     source_magazine_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("books.id", ondelete="CASCADE"), index=True, nullable=True

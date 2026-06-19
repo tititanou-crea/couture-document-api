@@ -33,6 +33,7 @@ type PatternFormState = {
   format: PatternFormat | "";
   description: string;
   coverUrl: string | null;
+  secondCoverUrl: string | null;
   magazinePatternIdentifier: string;
   difficulty_levels: PatternPayload["difficulty_levels"];
   target_audiences: PatternPayload["target_audiences"];
@@ -53,6 +54,7 @@ function initialState(pattern?: Pattern | null): PatternFormState {
     format: pattern?.format ?? "",
     description: pattern?.description ?? "",
     coverUrl: pattern?.cover_url ?? null,
+    secondCoverUrl: pattern?.second_cover_url ?? null,
     magazinePatternIdentifier: pattern?.magazine_pattern_identifier ?? "",
     difficulty_levels: pattern?.difficulty_levels ?? [],
     target_audiences: pattern?.target_audiences ?? [],
@@ -96,6 +98,7 @@ export function PatternForm({ initialPattern, submitLabel, onSubmit }: PatternFo
       format: form.format || null,
       description: form.description.trim() || null,
       cover_url: form.coverUrl,
+      second_cover_url: form.secondCoverUrl,
       magazine_pattern_identifier: form.magazinePatternIdentifier.trim() || null,
       source_magazine_id: initialPattern?.source_magazine_id ?? null,
       difficulty_levels: form.difficulty_levels,
@@ -219,8 +222,23 @@ export function PatternForm({ initialPattern, submitLabel, onSubmit }: PatternFo
         </div>
       </SectionCard>
 
-      <SectionCard title="3. Photo" description="Ajoutez une photo du patron pour l’identifier plus facilement.">
-        <CoverUpload value={form.coverUrl} onChange={(url) => update("coverUrl", url)} />
+      <SectionCard
+        title="3. Photos"
+        description="Ajoutez une photo principale et, si utile, une seconde vue du patron."
+      >
+        <div className="grid gap-6 xl:grid-cols-2">
+          <div>
+            <p className="label">Photo principale</p>
+            <CoverUpload value={form.coverUrl} onChange={(url) => update("coverUrl", url)} />
+          </div>
+          <div>
+            <p className="label">Deuxième photo (facultatif)</p>
+            <CoverUpload
+              value={form.secondCoverUrl}
+              onChange={(url) => update("secondCoverUrl", url)}
+            />
+          </div>
+        </div>
       </SectionCard>
 
       <div className="sticky bottom-20 z-10 rounded-lg border border-white/80 bg-white/90 p-4 shadow-soft backdrop-blur lg:bottom-4">

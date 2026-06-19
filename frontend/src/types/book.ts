@@ -62,6 +62,7 @@ export type Book = {
     designer_name?: string | null;
     magazine_pattern_identifier?: string | null;
     cover_url?: string | null;
+    second_cover_url?: string | null;
   }[];
   status: DocumentStatus;
   created_at: string;
@@ -76,6 +77,7 @@ export type BookPayload = Omit<Book, "id" | "document_type" | "created_at" | "up
     format?: "physical" | "digital" | "both" | null;
     description?: string | null;
     cover_url?: string | null;
+    second_cover_url?: string | null;
     magazine_pattern_identifier?: string | null;
     difficulty_levels: DifficultyLevel[];
     target_audiences: TargetAudience[];

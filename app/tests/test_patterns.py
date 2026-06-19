@@ -6,6 +6,7 @@ PATTERN_PAYLOAD = {
     "format": "both",
     "description": "Une robe portefeuille fluide avec plusieurs longueurs de manches.",
     "cover_url": "https://example.com/patterns/robe-magnolia.jpg",
+    "second_cover_url": "https://example.com/patterns/robe-magnolia-dos.jpg",
     "difficulty_levels": ["intermediate"],
     "target_audiences": ["women"],
     "main_categories": ["clothing"],
@@ -22,6 +23,7 @@ async def test_create_and_get_pattern(client: AsyncClient) -> None:
     assert created["model_name"] == PATTERN_PAYLOAD["model_name"]
     assert created["designer_name"] == PATTERN_PAYLOAD["designer_name"]
     assert created["format"] == "both"
+    assert created["second_cover_url"] == PATTERN_PAYLOAD["second_cover_url"]
     assert created["main_categories"] == ["clothing"]
 
     get_response = await client.get(f"/api/v1/patterns/{created['id']}")
@@ -90,6 +92,25 @@ async def test_update_pattern_to_validated_sets_validation_date(client: AsyncCli
     assert response.status_code == 200
     assert response.json()["status"] == "validated"
     assert response.json()["validated_at"] is not None
+
+
+async def test_update_pattern_adds_second_photo(client: AsyncClient) -> None:
+    create_response = await client.post(
+        "/api/v1/patterns",
+        json={**PATTERN_PAYLOAD, "second_cover_url": None},
+    )
+    pattern_id = create_response.json()["id"]
+
+    response = await client.put(
+        f"/api/v1/patterns/{pattern_id}",
+        json={"second_cover_url": "https://example.com/patterns/robe-magnolia-detail.jpg"},
+    )
+
+    assert response.status_code == 200
+    assert (
+        response.json()["second_cover_url"]
+        == "https://example.com/patterns/robe-magnolia-detail.jpg"
+    )
 
 
 async def test_delete_pattern(client: AsyncClient) -> None:

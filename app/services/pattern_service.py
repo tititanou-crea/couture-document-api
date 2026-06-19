@@ -72,6 +72,7 @@ class PatternService:
             "format": pattern.format,
             "description": pattern.description,
             "cover_url": pattern.cover_url,
+            "second_cover_url": pattern.second_cover_url,
             "magazine_pattern_identifier": pattern.magazine_pattern_identifier,
             "source_magazine_id": pattern.source_magazine_id,
             "difficulty_levels": pattern.difficulty_levels,

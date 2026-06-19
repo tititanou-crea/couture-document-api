@@ -19,6 +19,7 @@ class PatternBase(BaseModel):
     format: PatternFormat | None = None
     description: str | None = Field(default=None, max_length=2000)
     cover_url: AnyHttpUrl | None = None
+    second_cover_url: AnyHttpUrl | None = None
     magazine_pattern_identifier: str | None = Field(default=None, max_length=80)
     source_magazine_id: uuid.UUID | None = None
     difficulty_levels: list[DifficultyLevel] = Field(default_factory=list)
@@ -71,6 +72,7 @@ class PatternUpdate(BaseModel):
     format: PatternFormat | None = None
     description: str | None = Field(default=None, max_length=2000)
     cover_url: AnyHttpUrl | None = None
+    second_cover_url: AnyHttpUrl | None = None
     magazine_pattern_identifier: str | None = Field(default=None, max_length=80)
     source_magazine_id: uuid.UUID | None = None
     difficulty_levels: list[DifficultyLevel] | None = None
@@ -105,6 +107,7 @@ class PatternMagazineSummary(BaseModel):
 class PatternRead(PatternBase):
     id: uuid.UUID
     cover_url: str | None = None
+    second_cover_url: str | None = None
     source_magazine: PatternMagazineSummary | None = None
     created_at: datetime
     updated_at: datetime
@@ -123,8 +126,9 @@ def pattern_values_for_model(
     payload: PatternCreate | PatternUpdate, *, exclude_unset: bool = False
 ) -> dict[str, object]:
     values = payload.model_dump(exclude_unset=exclude_unset)
-    if values.get("cover_url") is not None:
-        values["cover_url"] = str(values["cover_url"])
+    for url_field in ("cover_url", "second_cover_url"):
+        if values.get(url_field) is not None:
+            values[url_field] = str(values[url_field])
     if values.get("status") == DocumentStatus.VALIDATED and values.get("validated_at") is None:
         values["validated_at"] = datetime.now(UTC)
     return values

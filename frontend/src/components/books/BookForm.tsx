@@ -56,6 +56,7 @@ type MagazinePatternFormState = {
   format: "physical" | "digital" | "both";
   description: string;
   coverUrl: string | null;
+  secondCoverUrl: string | null;
   difficulty_levels: BookPayload["difficulty_levels"];
   target_audiences: BookPayload["target_audiences"];
   main_categories: PatternMainCategory[];
@@ -198,6 +199,7 @@ export function BookForm({ initialBook, documentType, submitLabel, onSubmit }: B
                 description: pattern.description.trim() || null,
                 cover_url:
                   pattern.coverUrl || form.patternSheetUrl || form.patternSheetSecondUrl,
+                second_cover_url: pattern.secondCoverUrl,
                 magazine_pattern_identifier: pattern.identifier.trim() || null,
                 difficulty_levels: pattern.difficulty_levels,
                 target_audiences: pattern.target_audiences,
@@ -224,6 +226,7 @@ export function BookForm({ initialBook, documentType, submitLabel, onSubmit }: B
           format: "physical",
           description: "",
           coverUrl: null,
+          secondCoverUrl: null,
           difficulty_levels: current.difficulty_levels,
           target_audiences: current.target_audiences,
           main_categories: current.main_categories.filter((value): value is PatternMainCategory =>
@@ -461,20 +464,36 @@ export function BookForm({ initialBook, documentType, submitLabel, onSubmit }: B
                     </div>
                   </div>
 
-                  <div className="mt-4">
-                    <p className="label">
-                      Photo du modèle
-                      {form.patternSheetUrl || form.patternSheetSecondUrl
-                        ? " (facultatif)"
-                        : " (obligatoire sans planche globale)"}
-                    </p>
-                    <CoverUpload value={pattern.coverUrl} onChange={(url) => updateMagazinePattern(pattern.id, "coverUrl", url)} />
-                    <p className="mt-2 text-sm text-stone-500">
-                      {form.patternSheetUrl || form.patternSheetSecondUrl
-                        ? "Si aucune photo séparée n’est ajoutée, la planche du magazine sera utilisée."
-                        : "Comme aucune planche globale n’est renseignée, cette photo servira à identifier le patron."}
-                    </p>
+                  <div className="mt-4 grid gap-6 xl:grid-cols-2">
+                    <div>
+                      <p className="label">
+                        Photo principale
+                        {form.patternSheetUrl || form.patternSheetSecondUrl
+                          ? " (facultatif)"
+                          : " (obligatoire sans planche globale)"}
+                      </p>
+                      <CoverUpload
+                        value={pattern.coverUrl}
+                        onChange={(url) =>
+                          updateMagazinePattern(pattern.id, "coverUrl", url)
+                        }
+                      />
+                    </div>
+                    <div>
+                      <p className="label">Deuxième photo (facultatif)</p>
+                      <CoverUpload
+                        value={pattern.secondCoverUrl}
+                        onChange={(url) =>
+                          updateMagazinePattern(pattern.id, "secondCoverUrl", url)
+                        }
+                      />
+                    </div>
                   </div>
+                  <p className="mt-2 text-sm text-stone-500">
+                    {form.patternSheetUrl || form.patternSheetSecondUrl
+                      ? "Sans photo principale séparée, la planche du magazine sera utilisée."
+                      : "Sans planche globale, la photo principale sert à identifier le patron."}
+                  </p>
                 </div>
               ))}
 

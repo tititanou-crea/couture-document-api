@@ -148,8 +148,9 @@ class BookService:
         fallback_designer = book.title or book.publisher
         for pattern_payload in pattern_payloads:
             pattern_values = pattern_payload.model_dump()
-            if pattern_values.get("cover_url") is not None:
-                pattern_values["cover_url"] = str(pattern_values["cover_url"])
+            for url_field in ("cover_url", "second_cover_url"):
+                if pattern_values.get(url_field) is not None:
+                    pattern_values[url_field] = str(pattern_values[url_field])
             if pattern_values.get("designer_name") is None and fallback_designer:
                 pattern_values["designer_name"] = fallback_designer
             if pattern_values.get("cover_url") is None:

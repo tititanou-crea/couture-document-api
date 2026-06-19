@@ -87,6 +87,9 @@ async def test_create_magazine_with_patterns(client: AsyncClient) -> None:
                     "model_name": "Jupe en jean",
                     "magazine_pattern_identifier": "M1",
                     "description": "Une jupe courte en jean.",
+                    "second_cover_url": (
+                        "https://example.com/covers/jupe-en-jean-detail.jpg"
+                    ),
                     "difficulty_levels": ["beginner"],
                     "target_audiences": ["women"],
                     "main_categories": ["clothing"],
@@ -106,6 +109,10 @@ async def test_create_magazine_with_patterns(client: AsyncClient) -> None:
     assert len(created["patterns"]) == 1
     assert created["patterns"][0]["model_name"] == "Jupe en jean"
     assert created["patterns"][0]["magazine_pattern_identifier"] == "M1"
+    assert (
+        created["patterns"][0]["second_cover_url"]
+        == "https://example.com/covers/jupe-en-jean-detail.jpg"
+    )
 
     patterns_response = await client.get("/api/v1/patterns/search?q=Burda")
 

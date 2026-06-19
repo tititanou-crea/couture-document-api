@@ -63,6 +63,7 @@ class PatternRepository:
                 *self._like_any(Pattern.designer_name, search_patterns),
                 *self._like_any(Pattern.format, search_patterns),
                 *self._like_any(Pattern.description, search_patterns),
+                *self._like_any(Pattern.second_cover_url, search_patterns),
                 *self._like_any(Pattern.magazine_pattern_identifier, search_patterns),
                 *self._like_any(difficulty_levels_text, search_patterns),
                 *self._like_any(target_audiences_text, search_patterns),
