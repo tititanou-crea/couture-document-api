@@ -47,6 +47,7 @@ export type Book = {
   language: string;
   cover_url?: string | null;
   pattern_sheet_url?: string | null;
+  pattern_sheet_second_url?: string | null;
   categories: string[];
   tags: string[];
   difficulty_levels: DifficultyLevel[];

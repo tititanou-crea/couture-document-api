@@ -37,6 +37,7 @@ type BookFormState = {
   notes: string;
   coverUrl: string | null;
   patternSheetUrl: string | null;
+  patternSheetSecondUrl: string | null;
   difficulty_levels: BookPayload["difficulty_levels"];
   target_audiences: BookPayload["target_audiences"];
   main_categories: BookPayload["main_categories"];
@@ -84,6 +85,7 @@ function initialState(book?: Book | null, documentType?: BookPayload["document_t
     notes: "",
     coverUrl: book?.cover_url ?? null,
     patternSheetUrl: book?.pattern_sheet_url ?? null,
+    patternSheetSecondUrl: book?.pattern_sheet_second_url ?? null,
     difficulty_levels: book?.difficulty_levels ?? [],
     target_audiences: book?.target_audiences ?? [],
     main_categories: book?.main_categories ?? [],
@@ -111,6 +113,7 @@ export function BookForm({ initialBook, documentType, submitLabel, onSubmit }: B
     isMagazine &&
     form.includesPatterns === "yes" &&
     !form.patternSheetUrl &&
+    !form.patternSheetSecondUrl &&
     filledMagazinePatterns.some((pattern) => !pattern.coverUrl);
   const canSave = form.title.trim().length > 0 && !missingRequiredPatternPhotos;
 
@@ -123,6 +126,7 @@ export function BookForm({ initialBook, documentType, submitLabel, onSubmit }: B
       ...current,
       includesPatterns: value,
       patternSheetUrl: value === "yes" ? current.patternSheetUrl : null,
+      patternSheetSecondUrl: value === "yes" ? current.patternSheetSecondUrl : null,
       magazinePatterns: value === "yes" ? current.magazinePatterns : [],
     }));
   }
@@ -168,6 +172,7 @@ export function BookForm({ initialBook, documentType, submitLabel, onSubmit }: B
       language: "fr",
       cover_url: form.coverUrl,
       pattern_sheet_url: isMagazine ? form.patternSheetUrl : null,
+      pattern_sheet_second_url: isMagazine ? form.patternSheetSecondUrl : null,
       description: isMagazine
         ? null
         : form.description.trim()
@@ -191,7 +196,8 @@ export function BookForm({ initialBook, documentType, submitLabel, onSubmit }: B
                 designer_name: form.title.trim() || null,
                 format: pattern.format,
                 description: pattern.description.trim() || null,
-                cover_url: pattern.coverUrl || form.patternSheetUrl,
+                cover_url:
+                  pattern.coverUrl || form.patternSheetUrl || form.patternSheetSecondUrl,
                 magazine_pattern_identifier: pattern.identifier.trim() || null,
                 difficulty_levels: pattern.difficulty_levels,
                 target_audiences: pattern.target_audiences,
@@ -378,10 +384,26 @@ export function BookForm({ initialBook, documentType, submitLabel, onSubmit }: B
         <SectionCard title="4. Patrons du magazine" description="Ajoutez une planche globale si le magazine en propose une, puis créez les patrons du numéro depuis cette même page.">
           <div className="space-y-5">
             <div>
-              <p className="label">Photo de la planche des modèles (facultatif)</p>
-              <CoverUpload value={form.patternSheetUrl} onChange={(url) => update("patternSheetUrl", url)} />
+              <p className="label">Photos de la planche des modèles (facultatif)</p>
+              <div className="grid gap-6 xl:grid-cols-2">
+                <div>
+                  <p className="mb-2 text-sm font-semibold text-stone-600">Première page</p>
+                  <CoverUpload
+                    value={form.patternSheetUrl}
+                    onChange={(url) => update("patternSheetUrl", url)}
+                  />
+                </div>
+                <div>
+                  <p className="mb-2 text-sm font-semibold text-stone-600">Deuxième page</p>
+                  <CoverUpload
+                    value={form.patternSheetSecondUrl}
+                    onChange={(url) => update("patternSheetSecondUrl", url)}
+                  />
+                </div>
+              </div>
               <p className="mt-2 text-sm text-stone-500">
-                Si le magazine n’a pas de planche globale, ajoutez une photo pour chaque patron ci-dessous.
+                Pour une planche sur double page, ajoutez une photo de chaque page. Si le magazine
+                n’a pas de planche globale, ajoutez une photo pour chaque patron ci-dessous.
               </p>
             </div>
 
@@ -441,11 +463,14 @@ export function BookForm({ initialBook, documentType, submitLabel, onSubmit }: B
 
                   <div className="mt-4">
                     <p className="label">
-                      Photo du modèle{form.patternSheetUrl ? " (facultatif)" : " (obligatoire sans planche globale)"}
+                      Photo du modèle
+                      {form.patternSheetUrl || form.patternSheetSecondUrl
+                        ? " (facultatif)"
+                        : " (obligatoire sans planche globale)"}
                     </p>
                     <CoverUpload value={pattern.coverUrl} onChange={(url) => updateMagazinePattern(pattern.id, "coverUrl", url)} />
                     <p className="mt-2 text-sm text-stone-500">
-                      {form.patternSheetUrl
+                      {form.patternSheetUrl || form.patternSheetSecondUrl
                         ? "Si aucune photo séparée n’est ajoutée, la planche du magazine sera utilisée."
                         : "Comme aucune planche globale n’est renseignée, cette photo servira à identifier le patron."}
                     </p>

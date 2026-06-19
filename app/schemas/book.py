@@ -103,6 +103,7 @@ class BookBase(BaseModel):
     techniques: list[Technique] = Field(default_factory=list)
     includes_patterns: bool | None = None
     pattern_sheet_url: AnyHttpUrl | None = None
+    pattern_sheet_second_url: AnyHttpUrl | None = None
     status: DocumentStatus = DocumentStatus.DRAFT
     created_by: uuid.UUID | None = None
     validated_by: uuid.UUID | None = None
@@ -215,10 +216,12 @@ class BookUpdate(BaseModel):
     techniques: list[Technique] | None = None
     includes_patterns: bool | None = None
     pattern_sheet_url: AnyHttpUrl | None = None
+    pattern_sheet_second_url: AnyHttpUrl | None = None
     status: DocumentStatus | None = None
     created_by: uuid.UUID | None = None
     validated_by: uuid.UUID | None = None
     validated_at: datetime | None = None
+    magazine_patterns: list[MagazinePatternCreate] = Field(default_factory=list)
 
     @field_validator("document_type", mode="before")
     @classmethod
@@ -269,6 +272,7 @@ class BookRead(BookBase):
     id: uuid.UUID
     cover_url: str | None = None
     pattern_sheet_url: str | None = None
+    pattern_sheet_second_url: str | None = None
     patterns: list[BookPatternSummary] = Field(default_factory=list)
     created_at: datetime
     updated_at: datetime

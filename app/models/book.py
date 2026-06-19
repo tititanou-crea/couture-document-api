@@ -57,6 +57,7 @@ class Book(BaseDocumentMixin, ValidationWorkflowMixin, Base):
     )
     includes_patterns: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
     pattern_sheet_url: Mapped[str | None] = mapped_column(String(2048), nullable=True)
+    pattern_sheet_second_url: Mapped[str | None] = mapped_column(String(2048), nullable=True)
     patterns: Mapped[list[Pattern]] = relationship(
         back_populates="source_magazine",
         cascade="all, delete-orphan",

@@ -79,6 +79,9 @@ async def test_create_magazine_with_patterns(client: AsyncClient) -> None:
         json={
             **MAGAZINE_PAYLOAD,
             "pattern_sheet_url": "https://example.com/covers/burda-style-models.jpg",
+            "pattern_sheet_second_url": (
+                "https://example.com/covers/burda-style-models-page-2.jpg"
+            ),
             "magazine_patterns": [
                 {
                     "model_name": "Jupe en jean",
@@ -96,6 +99,10 @@ async def test_create_magazine_with_patterns(client: AsyncClient) -> None:
     assert response.status_code == 201
     created = response.json()
     assert created["pattern_sheet_url"] == "https://example.com/covers/burda-style-models.jpg"
+    assert (
+        created["pattern_sheet_second_url"]
+        == "https://example.com/covers/burda-style-models-page-2.jpg"
+    )
     assert len(created["patterns"]) == 1
     assert created["patterns"][0]["model_name"] == "Jupe en jean"
     assert created["patterns"][0]["magazine_pattern_identifier"] == "M1"
@@ -218,6 +225,45 @@ async def test_update_book(client: AsyncClient) -> None:
 
     assert response.status_code == 200
     assert response.json()["title"] == "Couture avancee"
+
+
+async def test_update_magazine_adds_new_pattern(client: AsyncClient) -> None:
+    create_response = await client.post("/api/v1/books", json=MAGAZINE_PAYLOAD)
+    magazine_id = create_response.json()["id"]
+
+    response = await client.put(
+        f"/api/v1/books/{magazine_id}",
+        json={
+            "pattern_sheet_second_url": (
+                "https://example.com/covers/burda-double-page-droite.jpg"
+            ),
+            "magazine_patterns": [
+                {
+                    "model_name": "Veste courte",
+                    "magazine_pattern_identifier": "104",
+                    "cover_url": "https://example.com/covers/veste-courte.jpg",
+                    "difficulty_levels": ["intermediate"],
+                    "target_audiences": ["women"],
+                    "main_categories": ["clothing"],
+                    "project_types": ["jacket"],
+                }
+            ]
+        },
+    )
+
+    assert response.status_code == 200
+    updated = response.json()
+    assert (
+        updated["pattern_sheet_second_url"]
+        == "https://example.com/covers/burda-double-page-droite.jpg"
+    )
+    assert len(updated["patterns"]) == 1
+    assert updated["patterns"][0]["model_name"] == "Veste courte"
+    assert updated["patterns"][0]["magazine_pattern_identifier"] == "104"
+
+    patterns_response = await client.get("/api/v1/patterns/search?q=Veste")
+    assert patterns_response.status_code == 200
+    assert patterns_response.json()["items"][0]["source_magazine"]["id"] == magazine_id
 
 
 async def test_update_book_to_validated_sets_validation_date(client: AsyncClient) -> None:

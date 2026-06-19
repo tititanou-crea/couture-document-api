@@ -92,6 +92,7 @@ class BookRepository:
                 *self._like_any(Book.description, search_patterns),
                 *self._like_any(Book.publisher, search_patterns),
                 *self._like_any(Book.pattern_sheet_url, search_patterns),
+                *self._like_any(Book.pattern_sheet_second_url, search_patterns),
                 *self._like_any(authors_text, search_patterns),
                 *self._like_any(tags_text, search_patterns),
                 *self._like_any(categories_text, search_patterns),

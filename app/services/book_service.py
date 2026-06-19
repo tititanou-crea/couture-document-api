@@ -9,14 +9,20 @@ from app.core.exceptions import ConflictError, ResourceNotFoundError
 from app.models.book import Book
 from app.models.pattern import Pattern
 from app.repositories.book_repository import BookRepository
-from app.schemas.book import BookBase, BookCreate, BookUpdate, PaginatedBooks
+from app.schemas.book import (
+    BookBase,
+    BookCreate,
+    BookUpdate,
+    MagazinePatternCreate,
+    PaginatedBooks,
+)
 
 
 def _to_model_values(
     payload: BookCreate | BookUpdate, *, exclude_unset: bool = False
 ) -> dict[str, object]:
     values = payload.model_dump(exclude_unset=exclude_unset, exclude={"magazine_patterns"})
-    for url_field in ("cover_url", "pattern_sheet_url"):
+    for url_field in ("cover_url", "pattern_sheet_url", "pattern_sheet_second_url"):
         if values.get(url_field) is not None:
             values[url_field] = str(values[url_field])
     return values
@@ -56,7 +62,7 @@ class BookService:
         book = Book(**values)
         try:
             created = await self.repository.create(book)
-            await self._create_magazine_patterns(created, payload)
+            await self._create_magazine_patterns(created, payload.magazine_patterns)
             await self.session.refresh(created, ["patterns"])
             await self.session.commit()
             return created
@@ -83,6 +89,8 @@ class BookService:
 
         try:
             updated = await self.repository.update(book, values)
+            await self._create_magazine_patterns(updated, payload.magazine_patterns)
+            await self.session.refresh(updated, ["patterns"])
             await self.session.commit()
             return updated
         except IntegrityError as exc:
@@ -122,6 +130,7 @@ class BookService:
             "techniques": book.techniques,
             "includes_patterns": book.includes_patterns,
             "pattern_sheet_url": book.pattern_sheet_url,
+            "pattern_sheet_second_url": book.pattern_sheet_second_url,
             "status": book.status,
             "created_by": book.created_by,
             "validated_by": book.validated_by,
@@ -130,19 +139,23 @@ class BookService:
         merged.update(values)
         BookBase.model_validate(merged)
 
-    async def _create_magazine_patterns(self, book: Book, payload: BookCreate) -> None:
-        if book.document_type != "magazine" or not payload.magazine_patterns:
+    async def _create_magazine_patterns(
+        self, book: Book, pattern_payloads: list[MagazinePatternCreate]
+    ) -> None:
+        if book.document_type != "magazine" or not pattern_payloads:
             return
 
         fallback_designer = book.title or book.publisher
-        for pattern_payload in payload.magazine_patterns:
+        for pattern_payload in pattern_payloads:
             pattern_values = pattern_payload.model_dump()
             if pattern_values.get("cover_url") is not None:
                 pattern_values["cover_url"] = str(pattern_values["cover_url"])
             if pattern_values.get("designer_name") is None and fallback_designer:
                 pattern_values["designer_name"] = fallback_designer
-            if pattern_values.get("cover_url") is None and book.pattern_sheet_url:
-                pattern_values["cover_url"] = book.pattern_sheet_url
+            if pattern_values.get("cover_url") is None:
+                pattern_values["cover_url"] = (
+                    book.pattern_sheet_url or book.pattern_sheet_second_url
+                )
             pattern_values["source_magazine_id"] = book.id
             pattern_values["status"] = book.status
             pattern_values["created_by"] = book.created_by
