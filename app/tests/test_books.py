@@ -253,6 +253,18 @@ async def test_list_books_is_paginated(client: AsyncClient) -> None:
     assert len(payload["items"]) == 1
 
 
+async def test_list_books_can_filter_document_type(client: AsyncClient) -> None:
+    await client.post("/api/v1/books", json=BOOK_PAYLOAD)
+    magazine_response = await client.post("/api/v1/books", json=MAGAZINE_PAYLOAD)
+
+    response = await client.get("/api/v1/books?document_type=magazine")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["total"] == 1
+    assert payload["items"][0]["id"] == magazine_response.json()["id"]
+
+
 async def test_reject_invalid_isbn(client: AsyncClient) -> None:
     response = await client.post("/api/v1/books", json={**BOOK_PAYLOAD, "isbn": "bad-isbn"})
 

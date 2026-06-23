@@ -7,9 +7,16 @@ type CoverImageProps = {
   alt: string;
   className?: string;
   iconClassName?: string;
+  eager?: boolean;
 };
 
-export function CoverImage({ src, alt, className = "h-full w-full object-cover", iconClassName = "text-rosewood/55" }: CoverImageProps) {
+export function CoverImage({
+  src,
+  alt,
+  className = "h-full w-full object-cover",
+  iconClassName = "text-rosewood/55",
+  eager = false,
+}: CoverImageProps) {
   const resolvedSrc = useMemo(() => resolveMediaUrl(src), [src]);
   const [failed, setFailed] = useState(false);
 
@@ -21,7 +28,17 @@ export function CoverImage({ src, alt, className = "h-full w-full object-cover",
     return <ImageOff className={iconClassName} size={44} aria-hidden />;
   }
 
-  return <img src={resolvedSrc} alt={alt} className={className} onError={() => setFailed(true)} />;
+  return (
+    <img
+      src={resolvedSrc}
+      alt={alt}
+      className={className}
+      loading={eager ? "eager" : "lazy"}
+      decoding="async"
+      fetchPriority={eager ? "high" : "auto"}
+      onError={() => setFailed(true)}
+    />
+  );
 }
 
 function resolveMediaUrl(src: string | null | undefined) {

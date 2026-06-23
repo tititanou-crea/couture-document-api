@@ -29,6 +29,7 @@ async def test_upload_cover(client: AsyncClient, tmp_path: Path) -> None:
     image_response = await client.get(payload["url"])
     assert image_response.status_code == 200
     assert image_response.headers["content-type"] == "image/png"
+    assert image_response.headers["cache-control"] == "public, max-age=31536000, immutable"
     assert image_response.content == b"\x89PNG\r\n\x1a\nimage-bytes"
 
 

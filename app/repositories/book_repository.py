@@ -6,6 +6,7 @@ from sqlalchemy import Select, String, cast, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.core.enums import DocumentType
 from app.models.book import Book
 from app.models.pattern import Pattern
 from app.repositories.search_terms import expand_search_terms
@@ -15,10 +16,19 @@ class BookRepository:
     def __init__(self, session: AsyncSession) -> None:
         self.session = session
 
-    async def list(self, *, limit: int, offset: int) -> tuple[list[Book], int]:
-        total = await self._count(select(Book))
+    async def list(
+        self,
+        *,
+        limit: int,
+        offset: int,
+        document_type: DocumentType | None = None,
+    ) -> tuple[list[Book], int]:
+        statement = select(Book)
+        if document_type is not None:
+            statement = statement.where(Book.document_type == document_type)
+        total = await self._count(statement)
         result = await self.session.execute(
-            select(Book)
+            statement
             .options(selectinload(Book.patterns))
             .order_by(Book.created_at.desc())
             .limit(limit)

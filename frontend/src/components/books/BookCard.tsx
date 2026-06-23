@@ -51,11 +51,11 @@ export function BookCard({ book, onDelete }: BookCardProps) {
               ) : null}
             </div>
             <div className="flex gap-2">
-              <Link href={detailsHref} className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-white px-4 py-2 font-semibold text-rosewood ring-1 ring-rosewood/20 hover:bg-cream">
+              <Link prefetch={false} href={detailsHref} className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-white px-4 py-2 font-semibold text-rosewood ring-1 ring-rosewood/20 hover:bg-cream">
                 <Eye aria-hidden size={18} />
                 Détails
               </Link>
-              <Link href={`/books/${book.id}/edit`} className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-white px-4 py-2 font-semibold text-rosewood ring-1 ring-rosewood/20 hover:bg-cream">
+              <Link prefetch={false} href={`/books/${book.id}/edit`} className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-white px-4 py-2 font-semibold text-rosewood ring-1 ring-rosewood/20 hover:bg-cream">
                 <Edit3 aria-hidden size={18} />
                 Modifier
               </Link>
@@ -89,7 +89,7 @@ export function BookCard({ book, onDelete }: BookCardProps) {
               </p>
               <div className="flex flex-wrap gap-2">
                 {book.patterns.map((pattern) => (
-                  <Link key={pattern.id} href={`/patterns/${pattern.id}/edit`} className="rounded-full bg-white px-3 py-1 text-sm font-semibold text-ink ring-1 ring-rosewood/10 hover:text-rosewood">
+                  <Link prefetch={false} key={pattern.id} href={`/patterns/${pattern.id}/edit`} className="rounded-full bg-white px-3 py-1 text-sm font-semibold text-ink ring-1 ring-rosewood/10 hover:text-rosewood">
                     {pattern.magazine_pattern_identifier ? `${pattern.magazine_pattern_identifier} - ` : ""}
                     {pattern.model_name || "Patron sans nom"}
                   </Link>

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { PlusCircle } from "lucide-react";
 import { AppLayout } from "@/layouts/AppLayout";
 import { BookCard } from "@/components/books/BookCard";
@@ -12,19 +12,37 @@ import type { PaginatedBooks } from "@/types/book";
 
 export default function MagazinesPage() {
   const magazines = useAsyncState<PaginatedBooks>();
+  const [loadingMore, setLoadingMore] = useState(false);
+  const pageSize = 12;
 
   useEffect(() => {
-    magazines.run(() => listBooks({ limit: 100, offset: 0 })).catch(() => undefined);
+    magazines.run(() => listBooks({ limit: pageSize, documentType: "magazine" })).catch(() => undefined);
   }, [magazines.run]);
 
   async function handleDelete(id: string) {
     if (!window.confirm("Supprimer ce magazine ? Cette action est définitive.")) return;
     await deleteBook(id);
-    magazines.run(() => listBooks({ limit: 100, offset: 0 })).catch(() => undefined);
+    magazines.run(() => listBooks({ limit: pageSize, documentType: "magazine" })).catch(() => undefined);
   }
 
-  const magazineItems =
-    magazines.data?.items.filter((book) => book.document_type === "magazine") ?? [];
+  const loadMore = useCallback(async () => {
+    if (!magazines.data || loadingMore) return;
+    setLoadingMore(true);
+    try {
+      const next = await listBooks({
+        limit: pageSize,
+        offset: magazines.data.items.length,
+        documentType: "magazine",
+      });
+      magazines.setData({ ...next, items: [...magazines.data.items, ...next.items] });
+    } catch (error) {
+      magazines.setError(error instanceof Error ? error.message : "Impossible de charger la suite.");
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [loadingMore, magazines.data, magazines.setData, magazines.setError]);
+
+  const magazineItems = magazines.data?.items ?? [];
 
   return (
     <AppLayout
@@ -47,6 +65,14 @@ export default function MagazinesPage() {
           <BookCard key={magazine.id} book={magazine} onDelete={handleDelete} />
         ))}
       </div>
+
+      {magazines.data && magazineItems.length < magazines.data.total ? (
+        <div className="mt-6 flex justify-center">
+          <Button variant="secondary" onClick={loadMore} disabled={loadingMore}>
+            {loadingMore ? "Chargement..." : `Afficher la suite (${magazines.data.total - magazineItems.length})`}
+          </Button>
+        </div>
+      ) : null}
 
       {!magazines.loading && magazineItems.length === 0 ? (
         <EmptyState title="Aucun magazine pour le moment">

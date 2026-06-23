@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.auth import get_current_user
+from app.core.enums import DocumentType
 from app.db.session import get_db_session
 from app.models.user import User
 from app.schemas.book import BookCreate, BookRead, BookUpdate, PaginatedBooks
@@ -23,12 +24,17 @@ async def get_book_service(
 async def list_books(
     service: Annotated[BookService, Depends(get_book_service)],
     q: Annotated[str | None, Query(min_length=1, max_length=120)] = None,
+    document_type: DocumentType | None = None,
     limit: Annotated[int, Query(ge=1, le=100)] = 20,
     offset: Annotated[int, Query(ge=0)] = 0,
 ) -> PaginatedBooks:
     if q is not None:
         return await service.search_books(query=q, limit=limit, offset=offset)
-    return await service.list_books(limit=limit, offset=offset)
+    return await service.list_books(
+        limit=limit,
+        offset=offset,
+        document_type=document_type,
+    )
 
 
 @router.get("/search", response_model=PaginatedBooks)

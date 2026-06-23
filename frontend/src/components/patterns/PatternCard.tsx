@@ -60,11 +60,11 @@ export function PatternCard({ pattern, onDelete }: PatternCardProps) {
               {pattern.magazine_pattern_identifier ? <p className="mt-1 text-sm font-semibold text-stone-600">Repère : {pattern.magazine_pattern_identifier}</p> : null}
             </div>
             <div className="flex gap-2">
-              <Link href={detailsHref} className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-white px-4 py-2 font-semibold text-rosewood ring-1 ring-rosewood/20 hover:bg-cream">
+              <Link prefetch={false} href={detailsHref} className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-white px-4 py-2 font-semibold text-rosewood ring-1 ring-rosewood/20 hover:bg-cream">
                 <Eye aria-hidden size={18} />
                 Détails
               </Link>
-              <Link href={`/patterns/${pattern.id}/edit`} className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-white px-4 py-2 font-semibold text-rosewood ring-1 ring-rosewood/20 hover:bg-cream">
+              <Link prefetch={false} href={`/patterns/${pattern.id}/edit`} className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-white px-4 py-2 font-semibold text-rosewood ring-1 ring-rosewood/20 hover:bg-cream">
                 <Edit3 aria-hidden size={18} />
                 Modifier
               </Link>
@@ -89,7 +89,7 @@ export function PatternCard({ pattern, onDelete }: PatternCardProps) {
           </p>
 
           {pattern.source_magazine ? (
-            <Link href={`/books/${pattern.source_magazine.id}`} className="mt-4 inline-flex items-center gap-2 rounded-md bg-linen px-3 py-2 text-sm font-bold text-rosewood hover:bg-cream">
+            <Link prefetch={false} href={`/books/${pattern.source_magazine.id}`} className="mt-4 inline-flex items-center gap-2 rounded-md bg-linen px-3 py-2 text-sm font-bold text-rosewood hover:bg-cream">
               <BookOpen aria-hidden size={16} />
               {pattern.source_magazine.title || "Magazine source"}
               {pattern.source_magazine.issue_number ? ` - ${pattern.source_magazine.issue_number}` : ""}

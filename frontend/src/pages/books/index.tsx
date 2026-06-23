@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { PlusCircle } from "lucide-react";
 import { AppLayout } from "@/layouts/AppLayout";
 import { BookCard } from "@/components/books/BookCard";
@@ -12,18 +12,37 @@ import type { PaginatedBooks } from "@/types/book";
 
 export default function BooksPage() {
   const books = useAsyncState<PaginatedBooks>();
+  const [loadingMore, setLoadingMore] = useState(false);
+  const pageSize = 12;
 
   useEffect(() => {
-    books.run(() => listBooks()).catch(() => undefined);
+    books.run(() => listBooks({ limit: pageSize, documentType: "book" })).catch(() => undefined);
   }, [books.run]);
 
   async function handleDelete(id: string) {
     if (!window.confirm("Supprimer ce livre ? Cette action est définitive.")) return;
     await deleteBook(id);
-    books.run(() => listBooks()).catch(() => undefined);
+    books.run(() => listBooks({ limit: pageSize, documentType: "book" })).catch(() => undefined);
   }
 
-  const bookItems = books.data?.items.filter((book) => book.document_type === "book") ?? [];
+  const loadMore = useCallback(async () => {
+    if (!books.data || loadingMore) return;
+    setLoadingMore(true);
+    try {
+      const next = await listBooks({
+        limit: pageSize,
+        offset: books.data.items.length,
+        documentType: "book",
+      });
+      books.setData({ ...next, items: [...books.data.items, ...next.items] });
+    } catch (error) {
+      books.setError(error instanceof Error ? error.message : "Impossible de charger la suite.");
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [books.data, books.setData, books.setError, loadingMore]);
+
+  const bookItems = books.data?.items ?? [];
 
   return (
     <AppLayout title="Liste des livres" subtitle="Toutes les fiches de la bibliothèque, prêtes à être consultées ou corrigées.">
@@ -42,6 +61,14 @@ export default function BooksPage() {
       <div className="space-y-4">
         {bookItems.map((book) => <BookCard key={book.id} book={book} onDelete={handleDelete} />)}
       </div>
+
+      {books.data && bookItems.length < books.data.total ? (
+        <div className="mt-6 flex justify-center">
+          <Button variant="secondary" onClick={loadMore} disabled={loadingMore}>
+            {loadingMore ? "Chargement..." : `Afficher la suite (${books.data.total - bookItems.length})`}
+          </Button>
+        </div>
+      ) : null}
 
       {!books.loading && bookItems.length === 0 ? (
         <EmptyState title="Aucun livre pour le moment">Ajoutez le premier livre pour commencer la bibliothèque BiblioCouture.</EmptyState>

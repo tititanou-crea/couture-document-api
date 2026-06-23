@@ -4,7 +4,7 @@ from datetime import UTC, datetime
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.enums import DocumentStatus
+from app.core.enums import DocumentStatus, DocumentType
 from app.core.exceptions import ConflictError, ResourceNotFoundError
 from app.models.book import Book
 from app.models.pattern import Pattern
@@ -34,8 +34,18 @@ class BookService:
         self.session = session
         self.repository = BookRepository(session)
 
-    async def list_books(self, *, limit: int, offset: int) -> PaginatedBooks:
-        books, total = await self.repository.list(limit=limit, offset=offset)
+    async def list_books(
+        self,
+        *,
+        limit: int,
+        offset: int,
+        document_type: DocumentType | None = None,
+    ) -> PaginatedBooks:
+        books, total = await self.repository.list(
+            limit=limit,
+            offset=offset,
+            document_type=document_type,
+        )
         return PaginatedBooks(items=books, total=total, limit=limit, offset=offset)
 
     async def get_book(self, book_id: uuid.UUID) -> Book:

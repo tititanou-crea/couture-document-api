@@ -1,8 +1,19 @@
 import { apiRequest } from "@/services/api";
-import type { Book, BookPayload, PaginatedBooks } from "@/types/book";
+import type { Book, BookPayload, DocumentType, PaginatedBooks } from "@/types/book";
 
-export function listBooks(params = { limit: 20, offset: 0 }) {
-  return apiRequest<PaginatedBooks>(`/books?limit=${params.limit}&offset=${params.offset}`);
+type ListBooksParams = {
+  limit?: number;
+  offset?: number;
+  documentType?: DocumentType;
+};
+
+export function listBooks({ limit = 20, offset = 0, documentType }: ListBooksParams = {}) {
+  const search = new URLSearchParams({
+    limit: String(limit),
+    offset: String(offset),
+  });
+  if (documentType) search.set("document_type", documentType);
+  return apiRequest<PaginatedBooks>(`/books?${search.toString()}`);
 }
 
 export function searchBooks(query: string, params = { limit: 20, offset: 0 }) {

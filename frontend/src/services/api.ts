@@ -5,6 +5,9 @@ export const API_URL =
   (process.env.NODE_ENV === "development" ? "http://localhost:8000/api/v1" : "");
 export const API_ORIGIN = API_URL.replace(/\/api\/v\d+\/?$/, "");
 export const TOKEN_COOKIE = "bibliocouture_token";
+const GET_CACHE_TTL_MS = 15_000;
+const responseCache = new Map<string, { expiresAt: number; value: unknown }>();
+const pendingRequests = new Map<string, Promise<unknown>>();
 
 export function getToken() {
   if (typeof window === "undefined") return null;
@@ -15,12 +18,14 @@ export function getToken() {
 }
 
 export function setToken(token: string) {
+  clearRequestCache();
   const secure = window.location.protocol === "https:" ? "; Secure" : "";
   const maxAge = getTokenMaxAge(token);
   document.cookie = `${TOKEN_COOKIE}=${encodeURIComponent(token)}; Path=/; SameSite=Strict; Max-Age=${maxAge}${secure}`;
 }
 
 export function clearToken() {
+  clearRequestCache();
   document.cookie = `${TOKEN_COOKIE}=; Path=/; SameSite=Strict; Max-Age=0`;
 }
 
@@ -50,6 +55,49 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
     headers.set("Authorization", `Bearer ${token}`);
   }
 
+  const method = (options.method ?? "GET").toUpperCase();
+  const cacheKey = method === "GET" ? `${token ?? "anonymous"}:${path}` : null;
+  if (cacheKey) {
+    const cached = responseCache.get(cacheKey);
+    if (cached && cached.expiresAt > Date.now()) {
+      return cached.value as T;
+    }
+    responseCache.delete(cacheKey);
+
+    const pending = pendingRequests.get(cacheKey);
+    if (pending) {
+      return pending as Promise<T>;
+    }
+  } else {
+    clearRequestCache();
+  }
+
+  const request = performRequest<T>(path, options, headers);
+  if (cacheKey) {
+    pendingRequests.set(cacheKey, request);
+  }
+
+  try {
+    const result = await request;
+    if (cacheKey) {
+      responseCache.set(cacheKey, {
+        expiresAt: Date.now() + GET_CACHE_TTL_MS,
+        value: result,
+      });
+    }
+    return result;
+  } finally {
+    if (cacheKey) {
+      pendingRequests.delete(cacheKey);
+    }
+  }
+}
+
+async function performRequest<T>(
+  path: string,
+  options: RequestOptions,
+  headers: Headers,
+): Promise<T> {
   let response: Response;
   try {
     response = await fetch(`${API_URL}${path}`, {
@@ -78,6 +126,11 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
   }
 
   return body as T;
+}
+
+function clearRequestCache() {
+  responseCache.clear();
+  pendingRequests.clear();
 }
 
 function safeJsonParse(text: string) {

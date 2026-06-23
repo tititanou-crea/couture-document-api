@@ -52,11 +52,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       clearToken();
       clearSessionActivity();
       setUser(null);
+      setLoading(false);
       return;
     }
 
     const session = token ? readJwt(token) : null;
     setUser(session);
+    setLoading(false);
 
     if (!session) {
       return;
