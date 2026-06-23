@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import unicodedata
 
-
 SEARCH_ALIASES = {
     "accessoire": "accessories",
     "accessoires": "accessories",

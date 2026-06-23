@@ -3,7 +3,7 @@ from datetime import datetime
 
 from sqlalchemy import DateTime, Enum, ForeignKey, String, func
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import Mapped, declared_attr, mapped_column
+from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from app.core.enums import DocumentStatus
 from app.db.types import StringList
@@ -49,8 +49,19 @@ class ValidationWorkflowMixin:
         return mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
 
     @declared_attr
+    def last_modified_by(cls) -> Mapped[uuid.UUID | None]:
+        return mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
+
+    @declared_attr
     def validated_by(cls) -> Mapped[uuid.UUID | None]:
         return mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
 
-    validated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    @declared_attr
+    def creator(cls):
+        return relationship("User", foreign_keys=[cls.created_by], lazy="joined")
 
+    @declared_attr
+    def last_modifier(cls):
+        return relationship("User", foreign_keys=[cls.last_modified_by], lazy="joined")
+
+    validated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

@@ -16,7 +16,7 @@ class Settings(BaseSettings):
     BACKEND_CORS_ORIGINS: list[AnyHttpUrl | str] = []
     BACKEND_CORS_ORIGIN_REGEX: str | None = None
     SECRET_KEY: str = "change-me-in-production"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 180
     DEFAULT_ADMIN_EMAIL: str = "tania.rojasangele@gmail.com"
     DEFAULT_ADMIN_PASSWORD: str = "Admin123!"
     DEFAULT_ADMIN_FIRST_NAME: str = "Tania"

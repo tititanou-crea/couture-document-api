@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.auth import get_current_user
 from app.db.session import get_db_session
+from app.models.user import User
 from app.schemas.pattern import PaginatedPatterns, PatternCreate, PatternRead, PatternUpdate
 from app.services.pattern_service import PatternService
 
@@ -21,9 +22,12 @@ async def get_pattern_service(
 @router.get("", response_model=PaginatedPatterns)
 async def list_patterns(
     service: Annotated[PatternService, Depends(get_pattern_service)],
+    q: Annotated[str | None, Query(min_length=1, max_length=120)] = None,
     limit: Annotated[int, Query(ge=1, le=100)] = 20,
     offset: Annotated[int, Query(ge=0)] = 0,
 ) -> PaginatedPatterns:
+    if q is not None:
+        return await service.search_patterns(query=q, limit=limit, offset=offset)
     return await service.list_patterns(limit=limit, offset=offset)
 
 
@@ -49,8 +53,9 @@ async def get_pattern(
 async def create_pattern(
     payload: PatternCreate,
     service: Annotated[PatternService, Depends(get_pattern_service)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ) -> PatternRead:
-    return await service.create_pattern(payload)
+    return await service.create_pattern(payload, actor=current_user)
 
 
 @router.put("/{pattern_id}", response_model=PatternRead)
@@ -58,8 +63,9 @@ async def update_pattern(
     pattern_id: uuid.UUID,
     payload: PatternUpdate,
     service: Annotated[PatternService, Depends(get_pattern_service)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ) -> PatternRead:
-    return await service.update_pattern(pattern_id, payload)
+    return await service.update_pattern(pattern_id, payload, actor=current_user)
 
 
 @router.delete("/{pattern_id}", status_code=status.HTTP_204_NO_CONTENT)

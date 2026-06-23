@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import ConflictError, ResourceNotFoundError
 from app.models.pattern import Pattern
+from app.models.user import User
 from app.repositories.pattern_repository import PatternRepository
 from app.schemas.pattern import (
     PaginatedPatterns,
@@ -30,8 +31,10 @@ class PatternService:
             raise ResourceNotFoundError("Patron introuvable")
         return pattern
 
-    async def create_pattern(self, payload: PatternCreate) -> Pattern:
+    async def create_pattern(self, payload: PatternCreate, *, actor: User) -> Pattern:
         values = pattern_values_for_model(payload)
+        values["created_by"] = actor.id
+        values["last_modified_by"] = actor.id
         pattern = Pattern(**values)
         try:
             created = await self.repository.create(pattern)
@@ -41,9 +44,13 @@ class PatternService:
             await self.session.rollback()
             raise ConflictError("Impossible de creer ce patron") from exc
 
-    async def update_pattern(self, pattern_id: uuid.UUID, payload: PatternUpdate) -> Pattern:
+    async def update_pattern(
+        self, pattern_id: uuid.UUID, payload: PatternUpdate, *, actor: User
+    ) -> Pattern:
         pattern = await self.get_pattern(pattern_id)
         values = pattern_values_for_model(payload, exclude_unset=True)
+        values.pop("created_by", None)
+        values["last_modified_by"] = actor.id
         self._validate_pattern_after_update(pattern, values)
 
         try:

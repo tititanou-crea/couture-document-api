@@ -8,6 +8,7 @@ from app.core.enums import DocumentStatus
 from app.core.exceptions import ConflictError, ResourceNotFoundError
 from app.models.book import Book
 from app.models.pattern import Pattern
+from app.models.user import User
 from app.repositories.book_repository import BookRepository
 from app.schemas.book import (
     BookBase,
@@ -43,7 +44,7 @@ class BookService:
             raise ResourceNotFoundError("Livre introuvable")
         return book
 
-    async def create_book(self, payload: BookCreate) -> Book:
+    async def create_book(self, payload: BookCreate, *, actor: User) -> Book:
         if payload.isbn is not None:
             existing = await self.repository.get_by_isbn(payload.isbn)
         else:
@@ -56,6 +57,8 @@ class BookService:
                 raise ConflictError("Un document avec cet EAN existe deja")
 
         values = _to_model_values(payload)
+        values["created_by"] = actor.id
+        values["last_modified_by"] = actor.id
         if values.get("status") == DocumentStatus.VALIDATED and values.get("validated_at") is None:
             values["validated_at"] = datetime.now(UTC)
 
@@ -70,9 +73,11 @@ class BookService:
             await self.session.rollback()
             raise ConflictError("Impossible de creer ce livre") from exc
 
-    async def update_book(self, book_id: uuid.UUID, payload: BookUpdate) -> Book:
+    async def update_book(self, book_id: uuid.UUID, payload: BookUpdate, *, actor: User) -> Book:
         book = await self.get_book(book_id)
         values = _to_model_values(payload, exclude_unset=True)
+        values.pop("created_by", None)
+        values["last_modified_by"] = actor.id
 
         if "isbn" in values and values["isbn"] != book.isbn:
             existing = await self.repository.get_by_isbn(str(values["isbn"]))
@@ -160,6 +165,7 @@ class BookService:
             pattern_values["source_magazine_id"] = book.id
             pattern_values["status"] = book.status
             pattern_values["created_by"] = book.created_by
+            pattern_values["last_modified_by"] = book.last_modified_by
             pattern = Pattern(**pattern_values)
             self.session.add(pattern)
         await self.session.flush()

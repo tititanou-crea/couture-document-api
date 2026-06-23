@@ -162,7 +162,10 @@ curl -X POST http://localhost:8000/api/v1/auth/login \
   -d '{"email":"tania.rojasangele@gmail.com","password":"Admin123!"}'
 ```
 
-Le token retourne est un JWT HS256. Les routes privees exigent ensuite :
+Le token retourne est un JWT HS256 valable 3 heures. Tant que la personne reste active,
+le frontend renouvelle discrètement la session. Après 3 heures sans action, la session
+locale est supprimée et la personne est redirigée vers la connexion. Les routes privees
+exigent ensuite :
 
 ```text
 Authorization: Bearer <token>
@@ -174,6 +177,7 @@ Routes protegees :
 - `/api/v1/upload/cover`
 - `/api/v1/users`
 - `/api/v1/auth/me`
+- `/api/v1/auth/refresh`
 
 Les routes `/api/v1/users` sont reservees au role `admin`. Cote frontend, la session est conservee dans un cookie `SameSite=Strict`, le middleware redirige vers `/login` si la session manque ou expire, et `/volunteers` est reserve a l'administratrice.
 

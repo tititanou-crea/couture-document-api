@@ -25,6 +25,8 @@ async def test_create_and_get_pattern(client: AsyncClient) -> None:
     assert created["format"] == "both"
     assert created["second_cover_url"] == PATTERN_PAYLOAD["second_cover_url"]
     assert created["main_categories"] == ["clothing"]
+    assert created["creator"]["first_name"] == "Tania"
+    assert created["last_modifier"] == created["creator"]
 
     get_response = await client.get(f"/api/v1/patterns/{created['id']}")
 
@@ -74,6 +76,17 @@ async def test_search_patterns_by_french_project_type(client: AsyncClient) -> No
         "/api/v1/patterns",
         json={**PATTERN_PAYLOAD, "model_name": "Modele d'ete", "project_types": ["skirt"]},
     )
+    unrelated_response = await client.post(
+        "/api/v1/patterns",
+        json={
+            **PATTERN_PAYLOAD,
+            "model_name": "Sac cabas",
+            "description": "Un grand sac double.",
+            "main_categories": ["accessories"],
+            "project_types": ["bag"],
+        },
+    )
+    unrelated = unrelated_response.json()
 
     response = await client.get("/api/v1/patterns/search?q=jupe")
 
@@ -81,6 +94,32 @@ async def test_search_patterns_by_french_project_type(client: AsyncClient) -> No
     payload = response.json()
     assert payload["total"] == 1
     assert payload["items"][0]["model_name"] == "Modele d'ete"
+    assert unrelated["id"] not in {item["id"] for item in payload["items"]}
+
+
+async def test_list_patterns_with_query_filters_results(client: AsyncClient) -> None:
+    matching_response = await client.post(
+        "/api/v1/patterns",
+        json={**PATTERN_PAYLOAD, "model_name": "Jupe d'ete", "project_types": ["skirt"]},
+    )
+    unrelated_response = await client.post(
+        "/api/v1/patterns",
+        json={
+            **PATTERN_PAYLOAD,
+            "model_name": "Sac cabas",
+            "description": "Un grand sac double.",
+            "main_categories": ["accessories"],
+            "project_types": ["bag"],
+        },
+    )
+
+    response = await client.get("/api/v1/patterns?q=jupe")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["total"] == 1
+    assert payload["items"][0]["id"] == matching_response.json()["id"]
+    assert unrelated_response.json()["id"] not in {item["id"] for item in payload["items"]}
 
 
 async def test_update_pattern_to_validated_sets_validation_date(client: AsyncClient) -> None:

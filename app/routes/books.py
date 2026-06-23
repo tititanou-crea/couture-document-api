@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.auth import get_current_user
 from app.db.session import get_db_session
+from app.models.user import User
 from app.schemas.book import BookCreate, BookRead, BookUpdate, PaginatedBooks
 from app.services.book_service import BookService
 
@@ -21,9 +22,12 @@ async def get_book_service(
 @router.get("", response_model=PaginatedBooks)
 async def list_books(
     service: Annotated[BookService, Depends(get_book_service)],
+    q: Annotated[str | None, Query(min_length=1, max_length=120)] = None,
     limit: Annotated[int, Query(ge=1, le=100)] = 20,
     offset: Annotated[int, Query(ge=0)] = 0,
 ) -> PaginatedBooks:
+    if q is not None:
+        return await service.search_books(query=q, limit=limit, offset=offset)
     return await service.list_books(limit=limit, offset=offset)
 
 
@@ -49,8 +53,9 @@ async def get_book(
 async def create_book(
     payload: BookCreate,
     service: Annotated[BookService, Depends(get_book_service)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ) -> BookRead:
-    return await service.create_book(payload)
+    return await service.create_book(payload, actor=current_user)
 
 
 @router.put("/{book_id}", response_model=BookRead)
@@ -58,8 +63,9 @@ async def update_book(
     book_id: uuid.UUID,
     payload: BookUpdate,
     service: Annotated[BookService, Depends(get_book_service)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ) -> BookRead:
-    return await service.update_book(book_id, payload)
+    return await service.update_book(book_id, payload, actor=current_user)
 
 
 @router.delete("/{book_id}", status_code=status.HTTP_204_NO_CONTENT)

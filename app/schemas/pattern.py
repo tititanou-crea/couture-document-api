@@ -11,6 +11,7 @@ from app.core.enums import (
     ProjectType,
     TargetAudience,
 )
+from app.schemas.book import DocumentContributor
 
 
 class PatternBase(BaseModel):
@@ -109,6 +110,8 @@ class PatternRead(PatternBase):
     cover_url: str | None = None
     second_cover_url: str | None = None
     source_magazine: PatternMagazineSummary | None = None
+    creator: DocumentContributor | None = None
+    last_modifier: DocumentContributor | None = None
     created_at: datetime
     updated_at: datetime
 

@@ -20,7 +20,7 @@ export default function EditPatternPage() {
 
   async function handleSubmit(payload: PatternPayload) {
     await updatePattern(id, payload);
-    router.push("/patterns");
+    router.push(`/patterns/${id}`);
   }
 
   return (

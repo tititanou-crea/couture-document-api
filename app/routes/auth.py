@@ -29,3 +29,11 @@ async def login(
 @router.get("/me", response_model=UserRead)
 async def me(current_user: Annotated[User, Depends(get_current_user)]) -> User:
     return current_user
+
+
+@router.post("/refresh", response_model=TokenResponse)
+async def refresh(
+    current_user: Annotated[User, Depends(get_current_user)],
+    service: Annotated[AuthService, Depends(get_auth_service)],
+) -> TokenResponse:
+    return service.create_session(current_user)

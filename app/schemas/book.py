@@ -270,12 +270,22 @@ class BookPatternSummary(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class DocumentContributor(BaseModel):
+    id: uuid.UUID
+    first_name: str
+    last_name: str
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class BookRead(BookBase):
     id: uuid.UUID
     cover_url: str | None = None
     pattern_sheet_url: str | None = None
     pattern_sheet_second_url: str | None = None
     patterns: list[BookPatternSummary] = Field(default_factory=list)
+    creator: DocumentContributor | None = None
+    last_modifier: DocumentContributor | None = None
     created_at: datetime
     updated_at: datetime
 

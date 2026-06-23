@@ -20,7 +20,7 @@ export default function EditBookPage() {
 
   async function handleSubmit(payload: BookPayload) {
     await updateBook(id, payload);
-    router.push(payload.document_type === "magazine" ? "/magazines" : "/books");
+    router.push(`/books/${id}`);
   }
 
   const isMagazine = book.data?.document_type === "magazine";

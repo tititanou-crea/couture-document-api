@@ -31,6 +31,12 @@ export type Technique =
 export type DocumentStatus = "draft" | "pending_validation" | "validated";
 export type DocumentType = "book" | "magazine";
 
+export type DocumentContributor = {
+  id: string;
+  first_name: string;
+  last_name: string;
+};
+
 export type Book = {
   id: string;
   document_type: DocumentType;
@@ -65,11 +71,16 @@ export type Book = {
     second_cover_url?: string | null;
   }[];
   status: DocumentStatus;
+  creator?: DocumentContributor | null;
+  last_modifier?: DocumentContributor | null;
   created_at: string;
   updated_at: string;
 };
 
-export type BookPayload = Omit<Book, "id" | "document_type" | "created_at" | "updated_at"> & {
+export type BookPayload = Omit<
+  Book,
+  "id" | "document_type" | "creator" | "last_modifier" | "created_at" | "updated_at"
+> & {
   document_type?: DocumentType;
   magazine_patterns?: {
     model_name?: string | null;

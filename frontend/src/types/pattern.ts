@@ -1,4 +1,11 @@
-import type { DifficultyLevel, DocumentStatus, MainCategory, ProjectType, TargetAudience } from "@/types/book";
+import type {
+  DifficultyLevel,
+  DocumentContributor,
+  DocumentStatus,
+  MainCategory,
+  ProjectType,
+  TargetAudience,
+} from "@/types/book";
 
 export type PatternMainCategory = Extract<MainCategory, "clothing" | "accessories">;
 export type PatternFormat = "physical" | "digital" | "both";
@@ -25,11 +32,16 @@ export type Pattern = {
   main_categories: PatternMainCategory[];
   project_types: ProjectType[];
   status: DocumentStatus;
+  creator?: DocumentContributor | null;
+  last_modifier?: DocumentContributor | null;
   created_at: string;
   updated_at: string;
 };
 
-export type PatternPayload = Omit<Pattern, "id" | "created_at" | "updated_at"> & {
+export type PatternPayload = Omit<
+  Pattern,
+  "id" | "creator" | "last_modifier" | "created_at" | "updated_at"
+> & {
   created_by?: string | null;
   validated_by?: string | null;
   validated_at?: string | null;

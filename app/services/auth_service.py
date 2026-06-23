@@ -2,6 +2,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import UnauthorizedError
 from app.core.security import create_access_token, verify_password
+from app.models.user import User
 from app.repositories.user_repository import UserRepository
 from app.schemas.user import LoginRequest, TokenResponse, UserRead
 
@@ -17,6 +18,9 @@ class AuthService:
         if not verify_password(payload.password, user.hashed_password):
             raise UnauthorizedError("Identifiants invalides")
 
+        return self.create_session(user)
+
+    def create_session(self, user: User) -> TokenResponse:
         token = create_access_token(
             user.id,
             {

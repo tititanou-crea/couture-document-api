@@ -1,7 +1,9 @@
 import Link from "next/link";
-import { Edit3, Shirt, Trash2 } from "lucide-react";
+import { useRouter } from "next/router";
+import { Edit3, Eye, Shirt, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { CoverImage } from "@/components/ui/CoverImage";
+import { DocumentTrace } from "@/components/ui/DocumentTrace";
 import { labelFor } from "@/utils/bookOptions";
 import type { Book } from "@/types/book";
 
@@ -11,15 +13,26 @@ type BookCardProps = {
 };
 
 export function BookCard({ book, onDelete }: BookCardProps) {
+  const router = useRouter();
   const chips = [
     ...book.difficulty_levels,
     ...book.target_audiences,
     ...book.main_categories,
     ...book.project_types,
   ].slice(0, 5);
+  const detailsHref = `/books/${book.id}`;
+  const documentLabel = book.document_type === "magazine" ? "magazine" : "livre";
+
+  function openDetails(target: EventTarget | null) {
+    if (target instanceof Element && target.closest("a, button")) return;
+    router.push(detailsHref);
+  }
 
   return (
-    <article className="soft-panel overflow-hidden">
+    <article
+      className="soft-panel cursor-pointer overflow-hidden transition hover:-translate-y-0.5 hover:border-rosewood/25 hover:shadow-md"
+      onClick={(event) => openDetails(event.target)}
+    >
       <div className="grid gap-0 md:grid-cols-[150px_1fr]">
         <div className="flex min-h-44 items-center justify-center bg-cream">
           <CoverImage src={book.cover_url} alt={`Couverture de ${book.title ?? "livre"}`} />
@@ -38,12 +51,16 @@ export function BookCard({ book, onDelete }: BookCardProps) {
               ) : null}
             </div>
             <div className="flex gap-2">
+              <Link href={detailsHref} className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-white px-4 py-2 font-semibold text-rosewood ring-1 ring-rosewood/20 hover:bg-cream">
+                <Eye aria-hidden size={18} />
+                Détails
+              </Link>
               <Link href={`/books/${book.id}/edit`} className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-white px-4 py-2 font-semibold text-rosewood ring-1 ring-rosewood/20 hover:bg-cream">
                 <Edit3 aria-hidden size={18} />
                 Modifier
               </Link>
               {onDelete ? (
-                <Button variant="quiet" type="button" aria-label="Supprimer le livre" onClick={() => onDelete(book.id)}>
+                <Button variant="quiet" type="button" aria-label={`Supprimer le ${documentLabel}`} onClick={() => onDelete(book.id)}>
                   <Trash2 aria-hidden size={19} />
                 </Button>
               ) : null}
@@ -80,6 +97,14 @@ export function BookCard({ book, onDelete }: BookCardProps) {
               </div>
             </div>
           ) : null}
+
+          <DocumentTrace
+            compact
+            createdAt={book.created_at}
+            updatedAt={book.updated_at}
+            creator={book.creator}
+            lastModifier={book.last_modifier}
+          />
         </div>
       </div>
     </article>

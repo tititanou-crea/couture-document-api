@@ -55,11 +55,30 @@ async def test_create_and_get_book(client: AsyncClient) -> None:
     assert created["isbn"] == "9782842218232"
     assert created["main_categories"] == ["clothing", "technique"]
     assert created["status"] == "draft"
+    assert created["creator"]["first_name"] == "Tania"
+    assert created["creator"]["last_name"] == "Rojas"
+    assert created["last_modifier"] == created["creator"]
 
     get_response = await client.get(f"/api/v1/books/{created['id']}")
 
     assert get_response.status_code == 200
     assert get_response.json()["id"] == created["id"]
+
+
+async def test_book_update_keeps_auditable_contributors(client: AsyncClient) -> None:
+    create_response = await client.post("/api/v1/books", json=BOOK_PAYLOAD)
+    created = create_response.json()
+
+    update_response = await client.put(
+        f"/api/v1/books/{created['id']}",
+        json={"title": "La couture pratique, édition revue"},
+    )
+
+    assert update_response.status_code == 200
+    updated = update_response.json()
+    assert updated["creator"]["first_name"] == "Tania"
+    assert updated["last_modifier"]["first_name"] == "Tania"
+    assert updated["updated_at"] >= created["updated_at"]
 
 
 async def test_create_magazine_with_ean_and_issue_number(client: AsyncClient) -> None:
@@ -146,6 +165,29 @@ async def test_search_magazines_by_french_pattern_project_type(client: AsyncClie
         },
     )
     created = response.json()
+    unrelated_response = await client.post(
+        "/api/v1/books",
+        json={
+            **MAGAZINE_PAYLOAD,
+            "ean": "9771234567010",
+            "issue_number": "Avril 2026",
+            "title": "Couture Maison",
+            "description": "Un numero consacre aux accessoires textiles.",
+            "project_types": ["bag"],
+            "magazine_patterns": [
+                {
+                    "model_name": "Sac cabas",
+                    "magazine_pattern_identifier": "31",
+                    "description": "Un grand sac double.",
+                    "difficulty_levels": ["beginner"],
+                    "target_audiences": ["women"],
+                    "main_categories": ["accessories"],
+                    "project_types": ["bag"],
+                }
+            ],
+        },
+    )
+    unrelated = unrelated_response.json()
 
     search_response = await client.get("/api/v1/books/search?q=jupe")
 
@@ -153,6 +195,32 @@ async def test_search_magazines_by_french_pattern_project_type(client: AsyncClie
     payload = search_response.json()
     assert payload["total"] == 1
     assert payload["items"][0]["id"] == created["id"]
+    assert unrelated["id"] not in {item["id"] for item in payload["items"]}
+
+
+async def test_list_books_with_query_filters_results(client: AsyncClient) -> None:
+    matching_response = await client.post(
+        "/api/v1/books",
+        json={**BOOK_PAYLOAD, "title": "Guide des jupes"},
+    )
+    unrelated_response = await client.post(
+        "/api/v1/books",
+        json={
+            **BOOK_PAYLOAD,
+            "isbn": "9782212678840",
+            "title": "Sacs et pochettes",
+            "description": "Des accessoires textiles pour la maison.",
+            "project_types": ["bag", "pouch"],
+        },
+    )
+
+    response = await client.get("/api/v1/books?q=jupe")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["total"] == 1
+    assert payload["items"][0]["id"] == matching_response.json()["id"]
+    assert unrelated_response.json()["id"] not in {item["id"] for item in payload["items"]}
 
 
 async def test_reject_invalid_magazine_ean(client: AsyncClient) -> None:
