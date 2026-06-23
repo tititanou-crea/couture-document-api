@@ -40,13 +40,18 @@ export function PatternCard({ pattern, onDelete }: PatternCardProps) {
       <div className="grid gap-0 md:grid-cols-[150px_1fr]">
         <div className="grid min-h-44 grid-cols-1 bg-cream">
           <div className="flex min-h-44 items-center justify-center overflow-hidden">
-            <CoverImage src={pattern.cover_url} alt={`Photo du patron ${pattern.model_name ?? ""}`} />
+            <CoverImage
+              src={pattern.cover_url}
+              alt={`Photo du patron ${pattern.model_name ?? ""}`}
+              thumbnailWidth={360}
+            />
           </div>
           {pattern.second_cover_url ? (
             <div className="flex min-h-44 items-center justify-center overflow-hidden border-t border-white">
               <CoverImage
                 src={pattern.second_cover_url}
                 alt={`Deuxième photo du patron ${pattern.model_name ?? ""}`}
+                thumbnailWidth={360}
               />
             </div>
           ) : null}

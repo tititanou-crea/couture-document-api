@@ -35,7 +35,11 @@ export function BookCard({ book, onDelete }: BookCardProps) {
     >
       <div className="grid gap-0 md:grid-cols-[150px_1fr]">
         <div className="flex min-h-44 items-center justify-center bg-cream">
-          <CoverImage src={book.cover_url} alt={`Couverture de ${book.title ?? "livre"}`} />
+          <CoverImage
+            src={book.cover_url}
+            alt={`Couverture de ${book.title ?? "livre"}`}
+            thumbnailWidth={360}
+          />
         </div>
         <div className="p-5">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">

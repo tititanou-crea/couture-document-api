@@ -3,6 +3,7 @@ from pathlib import Path
 from httpx import AsyncClient
 
 from app.media.services.media_service import MediaService
+from app.routes import media
 from app.routes.uploads import get_media_service
 
 
@@ -31,6 +32,37 @@ async def test_upload_cover(client: AsyncClient, tmp_path: Path) -> None:
     assert image_response.headers["content-type"] == "image/png"
     assert image_response.headers["cache-control"] == "public, max-age=31536000, immutable"
     assert image_response.content == b"\x89PNG\r\n\x1a\nimage-bytes"
+
+
+async def test_media_can_return_cached_thumbnail(
+    client: AsyncClient, tmp_path: Path, monkeypatch
+) -> None:
+    def override_media_service() -> MediaService:
+        return MediaService(storage_dir=tmp_path, base_url="/media/uploads")
+
+    from app.main import app
+
+    app.dependency_overrides[get_media_service] = override_media_service
+    monkeypatch.setattr(media.settings, "MEDIA_STORAGE_DIR", tmp_path)
+    monkeypatch.setattr(
+        media,
+        "resize_image_to_webp",
+        lambda *, content, width: b"thumbnail-webp",
+    )
+
+    upload_response = await client.post(
+        "/api/v1/upload/cover",
+        content=b"\x89PNG\r\n\x1a\nimage-bytes",
+        headers={"content-type": "image/png", "X-Filename": "cover.png"},
+    )
+    payload = upload_response.json()
+
+    image_response = await client.get(f"{payload['url']}?w=360")
+
+    assert image_response.status_code == 200
+    assert image_response.headers["content-type"] == "image/webp"
+    assert image_response.headers["cache-control"] == "public, max-age=31536000, immutable"
+    assert image_response.content == b"thumbnail-webp"
 
 
 async def test_upload_cover_rejects_non_image(client: AsyncClient, tmp_path: Path) -> None:

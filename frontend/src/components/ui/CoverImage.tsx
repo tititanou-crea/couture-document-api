@@ -8,6 +8,7 @@ type CoverImageProps = {
   className?: string;
   iconClassName?: string;
   eager?: boolean;
+  thumbnailWidth?: number;
 };
 
 export function CoverImage({
@@ -16,8 +17,9 @@ export function CoverImage({
   className = "h-full w-full object-cover",
   iconClassName = "text-rosewood/55",
   eager = false,
+  thumbnailWidth,
 }: CoverImageProps) {
-  const resolvedSrc = useMemo(() => resolveMediaUrl(src), [src]);
+  const resolvedSrc = useMemo(() => resolveMediaUrl(src, thumbnailWidth), [src, thumbnailWidth]);
   const [failed, setFailed] = useState(false);
 
   useEffect(() => {
@@ -41,25 +43,45 @@ export function CoverImage({
   );
 }
 
-function resolveMediaUrl(src: string | null | undefined) {
+function resolveMediaUrl(src: string | null | undefined, thumbnailWidth?: number) {
   if (!src) return null;
 
   const trimmedSrc = src.trim();
   if (!trimmedSrc) return null;
 
   if (trimmedSrc.startsWith("/media/")) {
-    return `${API_ORIGIN}${trimmedSrc}`;
+    return withThumbnailWidth(`${API_ORIGIN}${trimmedSrc}`, thumbnailWidth);
   }
 
   try {
     const url = new URL(trimmedSrc);
     const isLocalApiUrl = url.hostname === "localhost" || url.hostname === "127.0.0.1";
     if (isLocalApiUrl && url.pathname.startsWith("/media/") && API_ORIGIN) {
-      return `${API_ORIGIN}${url.pathname}${url.search}${url.hash}`;
+      return withThumbnailWidth(`${API_ORIGIN}${url.pathname}${url.search}${url.hash}`, thumbnailWidth);
+    }
+    if (API_ORIGIN && url.origin === API_ORIGIN && url.pathname.startsWith("/media/")) {
+      return withThumbnailWidth(url.toString(), thumbnailWidth);
     }
   } catch {
     return trimmedSrc;
   }
 
   return trimmedSrc;
+}
+
+function withThumbnailWidth(src: string, thumbnailWidth?: number) {
+  if (!thumbnailWidth) return src;
+
+  try {
+    if (src.startsWith("/")) {
+      const separator = src.includes("?") ? "&" : "?";
+      return `${src}${separator}w=${encodeURIComponent(String(thumbnailWidth))}`;
+    }
+
+    const url = new URL(src);
+    url.searchParams.set("w", String(thumbnailWidth));
+    return url.toString();
+  } catch {
+    return src;
+  }
 }
