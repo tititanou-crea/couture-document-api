@@ -10,6 +10,7 @@ from app.core.enums import DocumentType
 from app.models.book import Book
 from app.models.pattern import Pattern
 from app.repositories.search_terms import expand_search_terms
+from app.schemas.metadata import MetadataLookupResponse
 
 
 class BookRepository:
@@ -59,6 +60,89 @@ class BookRepository:
             )
         )
         return result.scalar_one_or_none()
+
+    async def get_book_metadata_by_isbn(self, isbn: str) -> MetadataLookupResponse | None:
+        result = await self.session.execute(
+            select(
+                Book.title,
+                Book.authors,
+                Book.publisher,
+                Book.description,
+                Book.cover_url,
+            )
+            .where(Book.isbn == isbn)
+            .limit(1)
+        )
+        row = result.one_or_none()
+        if row is None:
+            return None
+        return MetadataLookupResponse(
+            title=row.title,
+            authors=row.authors,
+            publisher=row.publisher,
+            description=row.description,
+            cover_url=row.cover_url,
+        )
+
+    async def get_magazine_metadata_by_ean(self, ean: str) -> MetadataLookupResponse | None:
+        result = await self.session.execute(
+            select(
+                Book.title,
+                Book.publisher,
+                Book.description,
+                Book.ean,
+                Book.issue_number,
+                Book.published_date,
+                Book.cover_url,
+            )
+            .where(Book.ean == ean)
+            .limit(1)
+        )
+        row = result.one_or_none()
+        if row is None:
+            return None
+        return MetadataLookupResponse(
+            title=row.title,
+            publisher=row.publisher,
+            description=row.description,
+            ean=row.ean,
+            issue_number=row.issue_number,
+            published_year=str(row.published_date.year) if row.published_date else None,
+            cover_url=row.cover_url,
+        )
+
+    async def get_magazine_metadata_by_title_and_issue(
+        self, *, title: str, issue: str
+    ) -> MetadataLookupResponse | None:
+        result = await self.session.execute(
+            select(
+                Book.title,
+                Book.publisher,
+                Book.description,
+                Book.ean,
+                Book.issue_number,
+                Book.published_date,
+                Book.cover_url,
+            )
+            .where(
+                Book.document_type == "magazine",
+                func.lower(Book.title) == title.lower(),
+                func.lower(Book.issue_number) == issue.lower(),
+            )
+            .limit(1)
+        )
+        row = result.one_or_none()
+        if row is None:
+            return None
+        return MetadataLookupResponse(
+            title=row.title,
+            publisher=row.publisher,
+            description=row.description,
+            ean=row.ean,
+            issue_number=row.issue_number,
+            published_year=str(row.published_date.year) if row.published_date else None,
+            cover_url=row.cover_url,
+        )
 
     async def create(self, book: Book) -> Book:
         self.session.add(book)

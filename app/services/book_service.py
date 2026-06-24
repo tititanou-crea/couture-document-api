@@ -17,6 +17,7 @@ from app.schemas.book import (
     MagazinePatternCreate,
     PaginatedBooks,
 )
+from app.services.metadata_lookup_cache import clear_metadata_lookup_cache
 
 
 def _to_model_values(
@@ -78,6 +79,7 @@ class BookService:
             await self._create_magazine_patterns(created, payload.magazine_patterns)
             await self.session.refresh(created, ["patterns"])
             await self.session.commit()
+            clear_metadata_lookup_cache()
             return created
         except IntegrityError as exc:
             await self.session.rollback()
@@ -107,6 +109,7 @@ class BookService:
             await self._create_magazine_patterns(updated, payload.magazine_patterns)
             await self.session.refresh(updated, ["patterns"])
             await self.session.commit()
+            clear_metadata_lookup_cache()
             return updated
         except IntegrityError as exc:
             await self.session.rollback()
@@ -116,6 +119,7 @@ class BookService:
         book = await self.get_book(book_id)
         await self.repository.delete(book)
         await self.session.commit()
+        clear_metadata_lookup_cache()
 
     async def search_books(self, *, query: str, limit: int, offset: int) -> PaginatedBooks:
         books, total = await self.repository.search(query=query, limit=limit, offset=offset)

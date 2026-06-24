@@ -15,6 +15,7 @@ from app.schemas.metadata import (
     PhotoMetadataRequest,
     PhotoMetadataResponse,
 )
+from app.services.metadata_lookup_cache import get_cached_metadata, set_cached_metadata
 from app.services.photo_metadata_service import (
     PhotoMetadataError,
     extract_book_metadata_from_photos,
@@ -22,6 +23,7 @@ from app.services.photo_metadata_service import (
 )
 
 router = APIRouter(prefix="/metadata", tags=["Metadata"])
+NO_METADATA = object()
 
 
 @router.post(
@@ -35,39 +37,47 @@ async def lookup_metadata(
     payload: MetadataLookupRequest,
     session: Annotated[AsyncSession, Depends(get_db_session)],
 ) -> MetadataLookupResponse | Response:
+    cache_key = metadata_cache_key(payload)
+    cached = get_cached_metadata(cache_key)
+    if cached is NO_METADATA:
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
+    if isinstance(cached, MetadataLookupResponse):
+        return cached
+
     repository = BookRepository(session)
     if payload.type in {"livre", "book"} and payload.isbn:
-        book = await repository.get_by_isbn(normalize_isbn(payload.isbn))
-        if book is not None:
-            return MetadataLookupResponse(
-                title=book.title,
-                authors=book.authors,
-                publisher=book.publisher,
-                description=book.description,
-                cover_url=book.cover_url,
-            )
+        metadata = await repository.get_book_metadata_by_isbn(normalize_isbn(payload.isbn))
+        if metadata is not None:
+            set_cached_metadata(cache_key, metadata)
+            return metadata
 
     if payload.type == "magazine":
-        book = None
+        metadata = None
         if payload.ean:
-            book = await repository.get_by_ean(normalize_ean(payload.ean))
+            metadata = await repository.get_magazine_metadata_by_ean(normalize_ean(payload.ean))
         elif payload.title and payload.date_numero:
-            book = await repository.get_magazine_by_title_and_issue(
+            metadata = await repository.get_magazine_metadata_by_title_and_issue(
                 title=payload.title,
                 issue=payload.date_numero,
             )
-        if book is not None:
-            return MetadataLookupResponse(
-                title=book.title,
-                publisher=book.publisher,
-                description=book.description,
-                ean=book.ean,
-                issue_number=book.issue_number,
-                published_year=str(book.published_date.year) if book.published_date else None,
-                cover_url=book.cover_url,
-            )
+        if metadata is not None:
+            set_cached_metadata(cache_key, metadata)
+            return metadata
 
+    set_cached_metadata(cache_key, NO_METADATA)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+def metadata_cache_key(payload: MetadataLookupRequest) -> str:
+    return "|".join(
+        [
+            payload.type,
+            normalize_isbn(payload.isbn) if payload.isbn else "",
+            normalize_ean(payload.ean) if payload.ean else "",
+            payload.title.strip().casefold() if payload.title else "",
+            payload.date_numero.strip().casefold() if payload.date_numero else "",
+        ]
+    )
 
 
 @router.post(
