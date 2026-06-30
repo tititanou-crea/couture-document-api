@@ -38,6 +38,7 @@ DEFAULT_ADMIN_LAST_NAME=Votre nom
 Notes :
 
 - Cette configuration Render utilise le plan gratuit. L'API peut se mettre en veille apres une periode d'inactivite.
+- Pour eviter une connexion tres lente au premier acces, passer le service API sur un plan Render qui ne dort pas, ou configurer un moniteur externe qui appelle regulierement `/health`.
 - Les uploads sont stockes localement sur Render Free et ne sont pas durables. Pour conserver les images, utiliser ensuite Cloudinary, Supabase Storage ou S3.
 - `SECRET_KEY` est genere automatiquement par Render.
 - Les migrations Alembic sont appliquees au demarrage du conteneur.

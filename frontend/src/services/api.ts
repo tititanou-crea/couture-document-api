@@ -6,6 +6,7 @@ export const API_URL =
 export const API_ORIGIN = API_URL.replace(/\/api\/v\d+\/?$/, "");
 export const TOKEN_COOKIE = "bibliocouture_token";
 const GET_CACHE_TTL_MS = 15_000;
+const DEFAULT_TIMEOUT_MS = 25_000;
 const responseCache = new Map<string, { expiresAt: number; value: unknown }>();
 const pendingRequests = new Map<string, Promise<unknown>>();
 
@@ -31,6 +32,7 @@ export function clearToken() {
 
 type RequestOptions = RequestInit & {
   auth?: boolean;
+  timeoutMs?: number;
 };
 
 export async function apiRequest<T>(path: string, options: RequestOptions = {}): Promise<T> {
@@ -99,15 +101,33 @@ async function performRequest<T>(
   headers: Headers,
 ): Promise<T> {
   let response: Response;
+  const { auth: _auth, signal, timeoutMs = DEFAULT_TIMEOUT_MS, ...fetchOptions } = options;
+  const controller = new AbortController();
+  const abortRequest = () => controller.abort();
+  if (signal?.aborted) {
+    abortRequest();
+  } else {
+    signal?.addEventListener("abort", abortRequest, { once: true });
+  }
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
   try {
     response = await fetch(`${API_URL}${path}`, {
-      ...options,
+      ...fetchOptions,
       headers,
+      signal: controller.signal,
     });
-  } catch {
+  } catch (error) {
+    if (isAbortError(error)) {
+      throw new Error(
+        "Le serveur met trop longtemps à répondre. Il est peut-être en train de se réveiller : réessayez dans quelques instants."
+      );
+    }
     throw new Error(
       "Connexion impossible à l'API déployée. Vérifiez l'URL NEXT_PUBLIC_API_URL et les origines CORS autorisées."
     );
+  } finally {
+    clearTimeout(timeout);
+    signal?.removeEventListener("abort", abortRequest);
   }
 
   if (response.status === 204) {
@@ -139,6 +159,14 @@ function safeJsonParse(text: string) {
   } catch {
     return { message: text };
   }
+}
+
+function isAbortError(error: unknown) {
+  return (
+    error instanceof DOMException && error.name === "AbortError"
+  ) || (
+    error instanceof Error && error.name === "AbortError"
+  );
 }
 
 function getTokenMaxAge(token: string) {

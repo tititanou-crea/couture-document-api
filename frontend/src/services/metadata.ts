@@ -34,6 +34,7 @@ export async function extractBookMetadataFromPhotos(files: {
 }) {
   return apiRequest<ExtractedBookMetadata>("/metadata/extract-from-photos", {
     method: "POST",
+    timeoutMs: 120_000,
     body: JSON.stringify({
       coverPhoto: files.coverPhoto ? { dataUrl: await fileToDataUrl(files.coverPhoto) } : null,
       backPhoto: files.backPhoto ? { dataUrl: await fileToDataUrl(files.backPhoto) } : null,
@@ -44,6 +45,7 @@ export async function extractBookMetadataFromPhotos(files: {
 export async function extractPatternMetadataFromPhoto(file: File) {
   return apiRequest<ExtractedPatternMetadata>("/metadata/extract-pattern-from-photo", {
     method: "POST",
+    timeoutMs: 120_000,
     body: JSON.stringify({
       photo: { dataUrl: await fileToDataUrl(file) },
     }),
