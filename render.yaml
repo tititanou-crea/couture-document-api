@@ -16,7 +16,7 @@ services:
       - key: BACKEND_CORS_ORIGINS
         sync: false
       - key: BACKEND_CORS_ORIGIN_REGEX
-        sync: false
+        value: '^https?://(localhost|127\.0\.0\.1)(:[0-9]+)?$|^https://couture-document(-[a-z0-9-]+)?-tanou-projects\.vercel\.app$|^https://couture-document\.vercel\.app$'
       - key: SECRET_KEY
         generateValue: true
       - key: ACCESS_TOKEN_EXPIRE_MINUTES

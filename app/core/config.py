@@ -6,6 +6,13 @@ from pydantic import AnyHttpUrl, Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
+DEFAULT_CORS_ORIGIN_REGEX = (
+    r"^https?://(localhost|127\.0\.0\.1)(:[0-9]+)?$"
+    r"|^https://couture-document(-[a-z0-9-]+)?-tanou-projects\.vercel\.app$"
+    r"|^https://couture-document\.vercel\.app$"
+)
+
+
 class Settings(BaseSettings):
     APP_NAME: str = "Couture Document API"
     DEBUG: bool = False
@@ -14,7 +21,7 @@ class Settings(BaseSettings):
         default="postgresql+asyncpg://couture:couture@localhost:5432/couture_catalog"
     )
     BACKEND_CORS_ORIGINS: list[AnyHttpUrl | str] = []
-    BACKEND_CORS_ORIGIN_REGEX: str | None = None
+    BACKEND_CORS_ORIGIN_REGEX: str | None = DEFAULT_CORS_ORIGIN_REGEX
     SECRET_KEY: str = "change-me-in-production"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 180
     DEFAULT_ADMIN_EMAIL: str = "tania.rojasangele@gmail.com"
@@ -49,6 +56,13 @@ class Settings(BaseSettings):
         except json.JSONDecodeError:
             return [origin.strip() for origin in value.split(",") if origin.strip()]
         return parsed if isinstance(parsed, list) else [str(parsed)]
+
+    @field_validator("BACKEND_CORS_ORIGIN_REGEX", mode="before")
+    @classmethod
+    def use_default_cors_regex_when_empty(cls, value: str | None) -> str | None:
+        if value == "":
+            return DEFAULT_CORS_ORIGIN_REGEX
+        return value
 
     model_config = SettingsConfigDict(
         env_file=".env",

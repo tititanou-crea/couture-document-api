@@ -29,6 +29,7 @@ L'application convertit automatiquement cette URL vers le driver async requis.
 ```text
 DATABASE_URL=postgresql://user:password@host:5432/database
 BACKEND_CORS_ORIGINS=["https://votre-frontend.vercel.app"]
+BACKEND_CORS_ORIGIN_REGEX=^https?://(localhost|127\.0\.0\.1)(:[0-9]+)?$|^https://couture-document(-[a-z0-9-]+)?-tanou-projects\.vercel\.app$|^https://couture-document\.vercel\.app$
 DEFAULT_ADMIN_EMAIL=votre-email
 DEFAULT_ADMIN_PASSWORD=un-mot-de-passe-fort
 DEFAULT_ADMIN_FIRST_NAME=Votre prenom
@@ -39,6 +40,7 @@ Notes :
 
 - Cette configuration Render utilise le plan gratuit. L'API peut se mettre en veille apres une periode d'inactivite.
 - Pour eviter une connexion tres lente au premier acces, passer le service API sur un plan Render qui ne dort pas, ou configurer un moniteur externe qui appelle regulierement `/health`.
+- Si le login affiche une erreur CORS, verifier que `BACKEND_CORS_ORIGIN_REGEX` autorise bien l'URL Vercel affichee dans la console du navigateur.
 - Les uploads sont stockes localement sur Render Free et ne sont pas durables. Pour conserver les images, utiliser ensuite Cloudinary, Supabase Storage ou S3.
 - `SECRET_KEY` est genere automatiquement par Render.
 - Les migrations Alembic sont appliquees au demarrage du conteneur.
