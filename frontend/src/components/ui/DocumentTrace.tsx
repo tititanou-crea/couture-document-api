@@ -29,9 +29,9 @@ export function DocumentTrace({
       }
     >
       <Clock3 aria-hidden className="mt-0.5 shrink-0" size={compact ? 13 : 15} />
-      <div className="flex min-w-0 flex-wrap gap-x-4 gap-y-1">
-        <span>Ajouté par {contributorName(creator)} le {formatDateTime(createdAt)}</span>
-        <span>Modifié par {contributorName(lastModifier)} le {formatDateTime(updatedAt)}</span>
+      <div className="min-w-0 space-y-1">
+        <p>Ajouté par {contributorName(creator)} le {formatDateTime(createdAt)}</p>
+        <p>Modifié par {contributorName(lastModifier)} le {formatDateTime(updatedAt)}</p>
       </div>
     </div>
   );
