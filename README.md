@@ -242,17 +242,49 @@ L'endpoint est public et ne demande pas de JWT. Il accepte :
 }
 ```
 
+`issueNumber` est aussi accepte pour les magazines :
+
+```json
+{
+  "type": "magazine",
+  "title": "Modes et travaux",
+  "issueNumber": "Hors série n 50"
+}
+```
+
+Les patrons peuvent etre recherches publiquement avec `patron` ou `pattern` :
+
+```json
+{
+  "type": "patron",
+  "modelName": "Robe Magnolia"
+}
+```
+
 Quand un livre est trouve dans le catalogue par ISBN, la reponse est :
 
 ```json
 {
   "title": "Titre",
+  "subtitle": "Sous-titre",
   "authors": ["Auteur 1"],
   "publisher": "Editeur",
+  "isbn": "9782842218232",
+  "publishedYear": "2024",
+  "pageCount": 240,
   "description": "Resume",
-  "coverUrl": "https://..."
+  "coverUrl": "https://...",
+  "difficulty_levels": ["beginner"],
+  "target_audiences": ["women"],
+  "main_categories": ["clothing"],
+  "project_types": ["dress"],
+  "includes_patterns": true,
+  "patterns": []
 }
 ```
+
+Pour les magazines, `patterns` contient les patrons rattaches au numero avec leurs champs de
+classification (`difficulty_levels`, `target_audiences`, `main_categories`, `project_types`).
 
 Si aucune metadata n'est trouvee, l'API repond `204 No Content`.
 

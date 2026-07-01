@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.auth import get_current_user
 from app.db.session import get_db_session
 from app.repositories.book_repository import BookRepository
+from app.repositories.pattern_repository import PatternRepository
 from app.schemas.book import normalize_ean, normalize_isbn
 from app.schemas.metadata import (
     MetadataLookupRequest,
@@ -55,10 +56,27 @@ async def lookup_metadata(
         metadata = None
         if payload.ean:
             metadata = await repository.get_magazine_metadata_by_ean(normalize_ean(payload.ean))
-        elif payload.title and payload.date_numero:
+        elif payload.title and metadata_issue_number(payload):
             metadata = await repository.get_magazine_metadata_by_title_and_issue(
                 title=payload.title,
-                issue=payload.date_numero,
+                issue=metadata_issue_number(payload),
+            )
+        if metadata is not None:
+            set_cached_metadata(cache_key, metadata)
+            return metadata
+
+    if payload.type in {"patron", "pattern"}:
+        pattern_repository = PatternRepository(session)
+        metadata = None
+        if payload.model_name:
+            metadata = await pattern_repository.get_pattern_metadata_by_name(
+                model_name=payload.model_name,
+                designer_name=payload.designer_name,
+            )
+        elif payload.title:
+            metadata = await pattern_repository.search_pattern_metadata(
+                query=payload.title,
+                designer_name=payload.designer_name,
             )
         if metadata is not None:
             set_cached_metadata(cache_key, metadata)
@@ -75,9 +93,17 @@ def metadata_cache_key(payload: MetadataLookupRequest) -> str:
             normalize_isbn(payload.isbn) if payload.isbn else "",
             normalize_ean(payload.ean) if payload.ean else "",
             payload.title.strip().casefold() if payload.title else "",
-            payload.date_numero.strip().casefold() if payload.date_numero else "",
+            payload.model_name.strip().casefold() if payload.model_name else "",
+            payload.designer_name.strip().casefold() if payload.designer_name else "",
+            metadata_issue_number(payload).strip().casefold()
+            if metadata_issue_number(payload)
+            else "",
         ]
     )
+
+
+def metadata_issue_number(payload: MetadataLookupRequest) -> str | None:
+    return payload.issue_number or payload.date_numero
 
 
 @router.post(

@@ -10,7 +10,7 @@ from app.core.enums import DocumentType
 from app.models.book import Book
 from app.models.pattern import Pattern
 from app.repositories.search_terms import expand_search_terms
-from app.schemas.metadata import MetadataLookupResponse
+from app.schemas.metadata import MetadataLookupResponse, MetadataPatternSummary
 
 
 class BookRepository:
@@ -63,67 +63,34 @@ class BookRepository:
 
     async def get_book_metadata_by_isbn(self, isbn: str) -> MetadataLookupResponse | None:
         result = await self.session.execute(
-            select(
-                Book.title,
-                Book.authors,
-                Book.publisher,
-                Book.description,
-                Book.cover_url,
-            )
+            select(Book)
+            .options(selectinload(Book.patterns))
             .where(Book.isbn == isbn)
             .limit(1)
         )
-        row = result.one_or_none()
-        if row is None:
+        book = result.scalar_one_or_none()
+        if book is None:
             return None
-        return MetadataLookupResponse(
-            title=row.title,
-            authors=row.authors,
-            publisher=row.publisher,
-            description=row.description,
-            cover_url=row.cover_url,
-        )
+        return self._metadata_from_book(book)
 
     async def get_magazine_metadata_by_ean(self, ean: str) -> MetadataLookupResponse | None:
         result = await self.session.execute(
-            select(
-                Book.title,
-                Book.publisher,
-                Book.description,
-                Book.ean,
-                Book.issue_number,
-                Book.published_date,
-                Book.cover_url,
-            )
+            select(Book)
+            .options(selectinload(Book.patterns))
             .where(Book.ean == ean)
             .limit(1)
         )
-        row = result.one_or_none()
-        if row is None:
+        book = result.scalar_one_or_none()
+        if book is None:
             return None
-        return MetadataLookupResponse(
-            title=row.title,
-            publisher=row.publisher,
-            description=row.description,
-            ean=row.ean,
-            issue_number=row.issue_number,
-            published_year=str(row.published_date.year) if row.published_date else None,
-            cover_url=row.cover_url,
-        )
+        return self._metadata_from_book(book)
 
     async def get_magazine_metadata_by_title_and_issue(
         self, *, title: str, issue: str
     ) -> MetadataLookupResponse | None:
         result = await self.session.execute(
-            select(
-                Book.title,
-                Book.publisher,
-                Book.description,
-                Book.ean,
-                Book.issue_number,
-                Book.published_date,
-                Book.cover_url,
-            )
+            select(Book)
+            .options(selectinload(Book.patterns))
             .where(
                 Book.document_type == "magazine",
                 func.lower(Book.title) == title.lower(),
@@ -131,17 +98,33 @@ class BookRepository:
             )
             .limit(1)
         )
-        row = result.one_or_none()
-        if row is None:
+        book = result.scalar_one_or_none()
+        if book is None:
             return None
+        return self._metadata_from_book(book)
+
+    def _metadata_from_book(self, book: Book) -> MetadataLookupResponse:
         return MetadataLookupResponse(
-            title=row.title,
-            publisher=row.publisher,
-            description=row.description,
-            ean=row.ean,
-            issue_number=row.issue_number,
-            published_year=str(row.published_date.year) if row.published_date else None,
-            cover_url=row.cover_url,
+            title=book.title,
+            subtitle=book.subtitle,
+            authors=book.authors,
+            publisher=book.publisher,
+            isbn=book.isbn,
+            ean=book.ean,
+            issue_number=book.issue_number,
+            published_year=str(book.published_date.year) if book.published_date else None,
+            page_count=book.page_count,
+            description=book.description,
+            cover_url=book.cover_url,
+            difficulty_levels=book.difficulty_levels,
+            target_audiences=book.target_audiences,
+            main_categories=book.main_categories,
+            project_types=book.project_types,
+            includes_patterns=book.includes_patterns,
+            patterns=[
+                MetadataPatternSummary.model_validate(pattern, from_attributes=True)
+                for pattern in book.patterns
+            ],
         )
 
     async def create(self, book: Book) -> Book:

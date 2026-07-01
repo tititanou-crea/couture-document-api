@@ -9,6 +9,7 @@ from sqlalchemy.orm import selectinload
 from app.models.book import Book
 from app.models.pattern import Pattern
 from app.repositories.search_terms import expand_search_terms
+from app.schemas.metadata import MetadataLookupResponse, MetadataPatternSummary
 
 
 class PatternRepository:
@@ -95,6 +96,78 @@ class PatternRepository:
             .offset(offset)
         )
         return list(result.scalars().all()), total
+
+    async def get_pattern_metadata_by_name(
+        self, *, model_name: str, designer_name: str | None = None
+    ) -> MetadataLookupResponse | None:
+        statement = (
+            select(Pattern)
+            .options(selectinload(Pattern.source_magazine))
+            .where(func.lower(Pattern.model_name) == model_name.lower())
+            .limit(1)
+        )
+        if designer_name:
+            statement = statement.where(func.lower(Pattern.designer_name) == designer_name.lower())
+
+        result = await self.session.execute(statement)
+        pattern = result.scalar_one_or_none()
+        if pattern is None:
+            return None
+        return self._metadata_from_pattern(pattern)
+
+    async def search_pattern_metadata(
+        self, *, query: str, designer_name: str | None = None
+    ) -> MetadataLookupResponse | None:
+        search_patterns = [f"%{term}%" for term in expand_search_terms(query)]
+        statement = (
+            select(Pattern)
+            .options(selectinload(Pattern.source_magazine))
+            .where(
+                or_(
+                    *self._like_any(Pattern.model_name, search_patterns),
+                    *self._like_any(Pattern.description, search_patterns),
+                    *[
+                        Pattern.source_magazine.has(func.lower(Book.title).like(pattern))
+                        for pattern in search_patterns
+                    ],
+                )
+            )
+            .order_by(Pattern.updated_at.desc())
+            .limit(1)
+        )
+        if designer_name:
+            statement = statement.where(func.lower(Pattern.designer_name) == designer_name.lower())
+
+        result = await self.session.execute(statement)
+        pattern = result.scalar_one_or_none()
+        if pattern is None:
+            return None
+        return self._metadata_from_pattern(pattern)
+
+    def _metadata_from_pattern(self, pattern: Pattern) -> MetadataLookupResponse:
+        summary = MetadataPatternSummary.model_validate(pattern, from_attributes=True)
+        source_magazine = pattern.source_magazine
+        return MetadataLookupResponse(
+            title=pattern.model_name,
+            authors=[pattern.designer_name] if pattern.designer_name else [],
+            publisher=source_magazine.publisher if source_magazine else None,
+            ean=source_magazine.ean if source_magazine else None,
+            issue_number=source_magazine.issue_number if source_magazine else None,
+            published_year=(
+                str(source_magazine.published_date.year)
+                if source_magazine and source_magazine.published_date
+                else None
+            ),
+            page_count=source_magazine.page_count if source_magazine else None,
+            description=pattern.description,
+            cover_url=pattern.cover_url,
+            difficulty_levels=pattern.difficulty_levels,
+            target_audiences=pattern.target_audiences,
+            main_categories=pattern.main_categories,
+            project_types=pattern.project_types,
+            includes_patterns=True,
+            patterns=[summary],
+        )
 
     async def _count(self, statement: Select[tuple[Pattern]]) -> int:
         count_statement = select(func.count()).select_from(statement.order_by(None).subquery())

@@ -2,6 +2,7 @@ from httpx import AsyncClient
 
 from app.schemas.metadata import PatternPhotoMetadataResponse, PhotoMetadataResponse
 from app.tests.test_books import BOOK_PAYLOAD, MAGAZINE_PAYLOAD
+from app.tests.test_patterns import PATTERN_PAYLOAD
 
 
 async def test_metadata_lookup_finds_book_by_isbn(client: AsyncClient) -> None:
@@ -16,10 +17,20 @@ async def test_metadata_lookup_finds_book_by_isbn(client: AsyncClient) -> None:
     assert response.status_code == 200
     assert response.json() == {
         "title": BOOK_PAYLOAD["title"],
+        "subtitle": BOOK_PAYLOAD["subtitle"],
         "authors": BOOK_PAYLOAD["authors"],
         "publisher": BOOK_PAYLOAD["publisher"],
+        "isbn": BOOK_PAYLOAD["isbn"],
+        "publishedYear": "2024",
+        "pageCount": BOOK_PAYLOAD["page_count"],
         "description": BOOK_PAYLOAD["description"],
         "coverUrl": BOOK_PAYLOAD["cover_url"],
+        "difficulty_levels": BOOK_PAYLOAD["difficulty_levels"],
+        "target_audiences": BOOK_PAYLOAD["target_audiences"],
+        "main_categories": BOOK_PAYLOAD["main_categories"],
+        "project_types": BOOK_PAYLOAD["project_types"],
+        "includes_patterns": BOOK_PAYLOAD["includes_patterns"],
+        "patterns": [],
     }
 
 
@@ -37,7 +48,27 @@ async def test_metadata_lookup_is_available_under_api_v1(client: AsyncClient) ->
 
 
 async def test_metadata_lookup_finds_magazine_by_ean(client: AsyncClient) -> None:
-    await client.post("/api/v1/books", json=MAGAZINE_PAYLOAD)
+    await client.post(
+        "/api/v1/books",
+        json={
+            **MAGAZINE_PAYLOAD,
+            "magazine_patterns": [
+                {
+                    "model_name": "Robe chemise",
+                    "designer_name": "Burda",
+                    "format": "physical",
+                    "description": "Une robe chemise ceinturee.",
+                    "cover_url": "https://example.com/covers/robe-chemise.jpg",
+                    "second_cover_url": "https://example.com/covers/robe-chemise-dos.jpg",
+                    "magazine_pattern_identifier": "102",
+                    "difficulty_levels": ["intermediate"],
+                    "target_audiences": ["women"],
+                    "main_categories": ["clothing"],
+                    "project_types": ["dress"],
+                }
+            ],
+        },
+    )
     client.headers.pop("Authorization")
 
     response = await client.post(
@@ -49,6 +80,26 @@ async def test_metadata_lookup_finds_magazine_by_ean(client: AsyncClient) -> Non
     assert response.json()["title"] == MAGAZINE_PAYLOAD["title"]
     assert response.json()["ean"] == MAGAZINE_PAYLOAD["ean"]
     assert response.json()["issueNumber"] == MAGAZINE_PAYLOAD["issue_number"]
+    assert response.json()["difficulty_levels"] == MAGAZINE_PAYLOAD["difficulty_levels"]
+    assert response.json()["target_audiences"] == MAGAZINE_PAYLOAD["target_audiences"]
+    assert response.json()["main_categories"] == MAGAZINE_PAYLOAD["main_categories"]
+    assert response.json()["project_types"] == MAGAZINE_PAYLOAD["project_types"]
+    assert response.json()["includes_patterns"] is True
+    assert response.json()["patterns"] == [
+        {
+            "model_name": "Robe chemise",
+            "designer_name": "Burda",
+            "format": "physical",
+            "description": "Une robe chemise ceinturee.",
+            "cover_url": "https://example.com/covers/robe-chemise.jpg",
+            "second_cover_url": "https://example.com/covers/robe-chemise-dos.jpg",
+            "magazine_pattern_identifier": "102",
+            "difficulty_levels": ["intermediate"],
+            "target_audiences": ["women"],
+            "main_categories": ["clothing"],
+            "project_types": ["dress"],
+        }
+    ]
 
 
 async def test_metadata_lookup_finds_magazine_by_title_and_issue(client: AsyncClient) -> None:
@@ -66,6 +117,64 @@ async def test_metadata_lookup_finds_magazine_by_title_and_issue(client: AsyncCl
 
     assert response.status_code == 200
     assert response.json()["title"] == MAGAZINE_PAYLOAD["title"]
+    assert response.json()["difficulty_levels"] == MAGAZINE_PAYLOAD["difficulty_levels"]
+    assert response.json()["target_audiences"] == MAGAZINE_PAYLOAD["target_audiences"]
+    assert response.json()["main_categories"] == MAGAZINE_PAYLOAD["main_categories"]
+    assert response.json()["project_types"] == MAGAZINE_PAYLOAD["project_types"]
+
+
+async def test_metadata_lookup_accepts_magazine_issue_number_alias(
+    client: AsyncClient,
+) -> None:
+    await client.post("/api/v1/books", json=MAGAZINE_PAYLOAD)
+    client.headers.pop("Authorization")
+
+    response = await client.post(
+        "/metadata",
+        json={
+            "type": "magazine",
+            "title": MAGAZINE_PAYLOAD["title"],
+            "issueNumber": MAGAZINE_PAYLOAD["issue_number"],
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json()["title"] == MAGAZINE_PAYLOAD["title"]
+    assert response.json()["issueNumber"] == MAGAZINE_PAYLOAD["issue_number"]
+    assert response.json()["difficulty_levels"] == MAGAZINE_PAYLOAD["difficulty_levels"]
+
+
+async def test_metadata_lookup_finds_pattern_by_model_name(client: AsyncClient) -> None:
+    await client.post("/api/v1/patterns", json=PATTERN_PAYLOAD)
+    client.headers.pop("Authorization")
+
+    response = await client.post(
+        "/metadata",
+        json={"type": "patron", "modelName": PATTERN_PAYLOAD["model_name"]},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["title"] == PATTERN_PAYLOAD["model_name"]
+    assert response.json()["description"] == PATTERN_PAYLOAD["description"]
+    assert response.json()["coverUrl"] == PATTERN_PAYLOAD["cover_url"]
+    assert response.json()["difficulty_levels"] == PATTERN_PAYLOAD["difficulty_levels"]
+    assert response.json()["target_audiences"] == PATTERN_PAYLOAD["target_audiences"]
+    assert response.json()["main_categories"] == PATTERN_PAYLOAD["main_categories"]
+    assert response.json()["project_types"] == PATTERN_PAYLOAD["project_types"]
+    assert response.json()["patterns"] == [
+        {
+            "model_name": PATTERN_PAYLOAD["model_name"],
+            "designer_name": PATTERN_PAYLOAD["designer_name"],
+            "format": PATTERN_PAYLOAD["format"],
+            "description": PATTERN_PAYLOAD["description"],
+            "cover_url": PATTERN_PAYLOAD["cover_url"],
+            "second_cover_url": PATTERN_PAYLOAD["second_cover_url"],
+            "difficulty_levels": PATTERN_PAYLOAD["difficulty_levels"],
+            "target_audiences": PATTERN_PAYLOAD["target_audiences"],
+            "main_categories": PATTERN_PAYLOAD["main_categories"],
+            "project_types": PATTERN_PAYLOAD["project_types"],
+        }
+    ]
 
 
 async def test_metadata_lookup_returns_empty_response_when_not_found(
