@@ -24,17 +24,15 @@ export function DocumentTrace({
     <div
       className={
         compact
-          ? "mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-rosewood/10 pt-3 text-xs text-stone-500"
-          : "rounded-lg bg-linen/60 px-4 py-3 text-sm text-stone-600"
+          ? "mt-4 flex items-start gap-1.5 border-t border-rosewood/10 pt-3 text-xs text-stone-500"
+          : "flex items-start gap-2 rounded-lg bg-linen/60 px-4 py-3 text-sm text-stone-600"
       }
     >
-      <span className="inline-flex items-center gap-1.5">
-        <Clock3 aria-hidden size={compact ? 13 : 15} />
-        Ajouté par {contributorName(creator)} le {formatDateTime(createdAt)}
-      </span>
-      <span>
-        Modifié par {contributorName(lastModifier)} le {formatDateTime(updatedAt)}
-      </span>
+      <Clock3 aria-hidden className="mt-0.5 shrink-0" size={compact ? 13 : 15} />
+      <div className="flex min-w-0 flex-wrap gap-x-4 gap-y-1">
+        <span>Ajouté par {contributorName(creator)} le {formatDateTime(createdAt)}</span>
+        <span>Modifié par {contributorName(lastModifier)} le {formatDateTime(updatedAt)}</span>
+      </div>
     </div>
   );
 }
