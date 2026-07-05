@@ -18,6 +18,7 @@ BOOK_PAYLOAD = {
     "main_categories": ["clothing", "technique"],
     "project_types": ["dress", "skirt"],
     "techniques": ["patternmaking", "serger"],
+    "available_sizes": ["34", "36", "38"],
     "includes_patterns": True,
     "status": "draft",
 }
@@ -41,6 +42,7 @@ MAGAZINE_PAYLOAD = {
     "main_categories": ["clothing"],
     "project_types": ["dress", "jacket"],
     "techniques": ["serger"],
+    "available_sizes": ["S", "M", "L"],
     "includes_patterns": True,
     "status": "draft",
 }
@@ -54,6 +56,7 @@ async def test_create_and_get_book(client: AsyncClient) -> None:
     assert created["title"] == BOOK_PAYLOAD["title"]
     assert created["isbn"] == "9782842218232"
     assert created["main_categories"] == ["clothing", "technique"]
+    assert created["available_sizes"] == ["34", "36", "38"]
     assert created["status"] == "draft"
     assert created["creator"]["first_name"] == "Tania"
     assert created["creator"]["last_name"] == "Rojas"
@@ -113,6 +116,7 @@ async def test_create_magazine_with_patterns(client: AsyncClient) -> None:
                     "target_audiences": ["women"],
                     "main_categories": ["clothing"],
                     "project_types": ["skirt"],
+                    "available_sizes": ["36", "38"],
                 }
             ],
         },
@@ -132,6 +136,7 @@ async def test_create_magazine_with_patterns(client: AsyncClient) -> None:
         created["patterns"][0]["second_cover_url"]
         == "https://example.com/covers/jupe-en-jean-detail.jpg"
     )
+    assert created["patterns"][0]["available_sizes"] == ["36", "38"]
 
     patterns_response = await client.get("/api/v1/patterns/search?q=Burda")
 
@@ -302,6 +307,17 @@ async def test_search_books(client: AsyncClient) -> None:
     payload = response.json()
     assert payload["total"] == 1
     assert payload["items"][0]["title"] == BOOK_PAYLOAD["title"]
+
+
+async def test_search_books_by_available_size(client: AsyncClient) -> None:
+    await client.post("/api/v1/books", json=BOOK_PAYLOAD)
+
+    response = await client.get("/api/v1/books/search?q=38")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["total"] == 1
+    assert payload["items"][0]["available_sizes"] == ["34", "36", "38"]
 
 
 async def test_update_book(client: AsyncClient) -> None:

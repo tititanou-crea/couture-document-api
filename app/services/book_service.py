@@ -147,6 +147,7 @@ class BookService:
             "main_categories": book.main_categories,
             "project_types": book.project_types,
             "techniques": book.techniques,
+            "available_sizes": book.available_sizes,
             "includes_patterns": book.includes_patterns,
             "pattern_sheet_url": book.pattern_sheet_url,
             "pattern_sheet_second_url": book.pattern_sheet_second_url,

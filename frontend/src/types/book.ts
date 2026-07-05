@@ -61,6 +61,7 @@ export type Book = {
   main_categories: MainCategory[];
   project_types: ProjectType[];
   techniques: Technique[];
+  available_sizes: string[];
   includes_patterns?: boolean | null;
   patterns?: {
     id: string;
@@ -69,6 +70,7 @@ export type Book = {
     magazine_pattern_identifier?: string | null;
     cover_url?: string | null;
     second_cover_url?: string | null;
+    available_sizes: string[];
   }[];
   status: DocumentStatus;
   creator?: DocumentContributor | null;
@@ -94,6 +96,7 @@ export type BookPayload = Omit<
     target_audiences: TargetAudience[];
     main_categories: Extract<MainCategory, "clothing" | "accessories">[];
     project_types: ProjectType[];
+    available_sizes: string[];
   }[];
   created_by?: string | null;
   validated_by?: string | null;

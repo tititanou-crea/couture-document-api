@@ -16,6 +16,7 @@ from app.core.enums import (
 )
 from app.db.enum_types import EnumList
 from app.db.session import Base
+from app.db.types import StringList
 from app.models.mixins import TimestampMixin, UUIDPrimaryKeyMixin, ValidationWorkflowMixin
 
 if TYPE_CHECKING:
@@ -47,4 +48,7 @@ class Pattern(UUIDPrimaryKeyMixin, TimestampMixin, ValidationWorkflowMixin, Base
     )
     project_types: Mapped[list[str]] = mapped_column(
         EnumList(ProjectType, "project_type"), nullable=False, default=list
+    )
+    available_sizes: Mapped[list[str]] = mapped_column(
+        StringList(40), nullable=False, default=list
     )

@@ -43,6 +43,7 @@ type BookFormState = {
   main_categories: BookPayload["main_categories"];
   project_types: BookPayload["project_types"];
   techniques: BookPayload["techniques"];
+  availableSizes: string;
   includesPatterns: IncludesPatternsChoice;
   otherProject: string;
   otherTechnique: string;
@@ -61,6 +62,7 @@ type MagazinePatternFormState = {
   target_audiences: BookPayload["target_audiences"];
   main_categories: PatternMainCategory[];
   project_types: BookPayload["project_types"];
+  availableSizes: string;
 };
 
 type BookFormProps = {
@@ -92,6 +94,7 @@ function initialState(book?: Book | null, documentType?: BookPayload["document_t
     main_categories: book?.main_categories ?? [],
     project_types: book?.project_types ?? [],
     techniques: book?.techniques ?? [],
+    availableSizes: book?.available_sizes.join(", ") ?? "",
     includesPatterns:
       book?.includes_patterns === true ? "yes" : book?.includes_patterns === false ? "no" : "unknown",
     otherProject: "",
@@ -186,6 +189,7 @@ export function BookForm({ initialBook, documentType, submitLabel, onSubmit }: B
       main_categories: form.main_categories,
       project_types: form.project_types,
       techniques: form.techniques,
+      available_sizes: parseCommaList(form.availableSizes),
       includes_patterns:
         form.includesPatterns === "unknown" ? null : form.includesPatterns === "yes",
       magazine_patterns:
@@ -205,6 +209,7 @@ export function BookForm({ initialBook, documentType, submitLabel, onSubmit }: B
                 target_audiences: pattern.target_audiences,
                 main_categories: pattern.main_categories,
                 project_types: pattern.project_types,
+                available_sizes: parseCommaList(pattern.availableSizes),
               }))
           : [],
       status: "draft",
@@ -233,6 +238,7 @@ export function BookForm({ initialBook, documentType, submitLabel, onSubmit }: B
             ["clothing", "accessories"].includes(value)
           ),
           project_types: current.project_types,
+          availableSizes: current.availableSizes,
         },
       ],
     }));
@@ -362,6 +368,9 @@ export function BookForm({ initialBook, documentType, submitLabel, onSubmit }: B
               </span>
             </label>
           </div>
+          <div className="lg:col-span-6">
+            <TextField label="Tailles disponibles" value={form.availableSizes} onChange={(event) => update("availableSizes", event.target.value)} placeholder="Ex. 34, 36, 38, 40 ou S, M, L" help="Facultatif. Séparez les tailles par une virgule." />
+          </div>
         </div>
       </SectionCard>
 
@@ -438,6 +447,7 @@ export function BookForm({ initialBook, documentType, submitLabel, onSubmit }: B
                   <div className="grid gap-4 md:grid-cols-3">
                     <TextField label="Nom descriptif" value={pattern.modelName} onChange={(event) => updateMagazinePattern(pattern.id, "modelName", event.target.value)} placeholder="Ex. Jupe en jean" />
                     <TextField label="Repère sur la planche" value={pattern.identifier} onChange={(event) => updateMagazinePattern(pattern.id, "identifier", event.target.value)} placeholder="Ex. M1, 12A, modèle 104" />
+                    <TextField label="Tailles disponibles" value={pattern.availableSizes} onChange={(event) => updateMagazinePattern(pattern.id, "availableSizes", event.target.value)} placeholder="Ex. 36, 38, 40 ou S, M, L" help="Facultatif. Séparez les tailles par une virgule." />
                     <label>
                       <span className="label">Format</span>
                       <select className="field" value={pattern.format} onChange={(event) => updateMagazinePattern(pattern.id, "format", event.target.value as MagazinePatternFormState["format"])}>
@@ -516,5 +526,16 @@ export function BookForm({ initialBook, documentType, submitLabel, onSubmit }: B
         </div>
       </div>
     </form>
+  );
+}
+
+function parseCommaList(value: string) {
+  return Array.from(
+    new Set(
+      value
+        .split(",")
+        .map((item) => item.trim())
+        .filter(Boolean)
+    )
   );
 }

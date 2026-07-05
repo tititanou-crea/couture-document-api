@@ -23,6 +23,7 @@ class MetadataPatternSummary(BaseModel):
     target_audiences: list[TargetAudience] = Field(default_factory=list)
     main_categories: list[MainCategory] = Field(default_factory=list)
     project_types: list[ProjectType] = Field(default_factory=list)
+    available_sizes: list[str] = Field(default_factory=list)
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -56,6 +57,7 @@ class MetadataLookupResponse(BaseModel):
     target_audiences: list[TargetAudience] = Field(default_factory=list)
     main_categories: list[MainCategory] = Field(default_factory=list)
     project_types: list[ProjectType] = Field(default_factory=list)
+    available_sizes: list[str] = Field(default_factory=list)
     includes_patterns: bool | None = None
     patterns: list[MetadataPatternSummary] = Field(default_factory=list)
     extracted_text: str | None = Field(default=None, alias="extractedText")
@@ -90,6 +92,7 @@ class PatternPhotoMetadataResponse(BaseModel):
     target_audiences: list[TargetAudience] = Field(default_factory=list, alias="targetAudiences")
     main_categories: list[MainCategory] = Field(default_factory=list, alias="mainCategories")
     project_types: list[ProjectType] = Field(default_factory=list, alias="projectTypes")
+    available_sizes: list[str] = Field(default_factory=list, alias="availableSizes")
     extracted_text: str | None = Field(default=None, alias="extractedText")
     confidence: str | None = None
 

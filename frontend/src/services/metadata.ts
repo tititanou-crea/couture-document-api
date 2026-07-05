@@ -23,6 +23,7 @@ export type ExtractedPatternMetadata = {
   targetAudiences?: string[];
   mainCategories?: string[];
   projectTypes?: string[];
+  availableSizes?: string[];
   coverUrl?: string | null;
   extractedText?: string | null;
   confidence?: "high" | "medium" | "low" | null;

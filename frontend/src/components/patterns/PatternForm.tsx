@@ -39,6 +39,7 @@ type PatternFormState = {
   target_audiences: PatternPayload["target_audiences"];
   main_categories: PatternPayload["main_categories"];
   project_types: PatternPayload["project_types"];
+  availableSizes: string;
 };
 
 type PatternFormProps = {
@@ -60,6 +61,7 @@ function initialState(pattern?: Pattern | null): PatternFormState {
     target_audiences: pattern?.target_audiences ?? [],
     main_categories: pattern?.main_categories ?? [],
     project_types: pattern?.project_types ?? [],
+    availableSizes: pattern?.available_sizes.join(", ") ?? "",
   };
 }
 
@@ -105,6 +107,7 @@ export function PatternForm({ initialPattern, submitLabel, onSubmit }: PatternFo
       target_audiences: form.target_audiences,
       main_categories: form.main_categories,
       project_types: form.project_types,
+      available_sizes: parseCommaList(form.availableSizes),
       status: "draft",
       created_by: null,
       validated_by: null,
@@ -145,6 +148,8 @@ export function PatternForm({ initialPattern, submitLabel, onSubmit }: PatternFo
             "hair_accessories",
             "textile_decoration",
           ]),
+      availableSizes:
+        current.availableSizes || metadata.availableSizes?.join(", ") || "",
     }));
   }
 
@@ -195,6 +200,7 @@ export function PatternForm({ initialPattern, submitLabel, onSubmit }: PatternFo
             </select>
           </label>
           <TextField label="Repère sur la planche" value={form.magazinePatternIdentifier} onChange={(event) => update("magazinePatternIdentifier", event.target.value)} placeholder="Ex. M1, 12A, modèle 104" />
+          <TextField label="Tailles disponibles" value={form.availableSizes} onChange={(event) => update("availableSizes", event.target.value)} placeholder="Ex. 34, 36, 38, 40 ou S, M, L" help="Facultatif. Séparez les tailles par une virgule." />
         </div>
         {initialPattern?.source_magazine ? (
           <div className="mt-4 rounded-md bg-linen px-4 py-3 text-sm font-semibold text-rosewood">
@@ -256,4 +262,15 @@ export function PatternForm({ initialPattern, submitLabel, onSubmit }: PatternFo
 function filterValues<T extends string>(values: string[] | undefined, allowed: T[]) {
   if (!values) return [];
   return values.filter((value): value is T => allowed.includes(value as T));
+}
+
+function parseCommaList(value: string) {
+  return Array.from(
+    new Set(
+      value
+        .split(",")
+        .map((item) => item.trim())
+        .filter(Boolean)
+    )
+  );
 }

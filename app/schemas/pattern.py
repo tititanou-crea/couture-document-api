@@ -27,10 +27,17 @@ class PatternBase(BaseModel):
     target_audiences: list[TargetAudience] = Field(default_factory=list)
     main_categories: list[MainCategory] = Field(default_factory=list)
     project_types: list[ProjectType] = Field(default_factory=list)
+    available_sizes: list[str] = Field(default_factory=list)
     status: DocumentStatus = DocumentStatus.DRAFT
     created_by: uuid.UUID | None = None
     validated_by: uuid.UUID | None = None
     validated_at: datetime | None = None
+
+    @field_validator("available_sizes")
+    @classmethod
+    def normalize_available_sizes(cls, values: list[str]) -> list[str]:
+        cleaned = [value.strip() for value in values if value.strip()]
+        return list(dict.fromkeys(cleaned))
 
     @field_validator("main_categories")
     @classmethod
@@ -80,6 +87,7 @@ class PatternUpdate(BaseModel):
     target_audiences: list[TargetAudience] | None = None
     main_categories: list[MainCategory] | None = None
     project_types: list[ProjectType] | None = None
+    available_sizes: list[str] | None = None
     status: DocumentStatus | None = None
     created_by: uuid.UUID | None = None
     validated_by: uuid.UUID | None = None
@@ -93,6 +101,14 @@ class PatternUpdate(BaseModel):
         if values is not None and MainCategory.TECHNIQUE in values:
             raise ValueError("La categorie technique n'est pas disponible pour les patrons")
         return values
+
+    @field_validator("available_sizes")
+    @classmethod
+    def normalize_available_sizes(cls, values: list[str] | None) -> list[str] | None:
+        if values is None:
+            return values
+        cleaned = [value.strip() for value in values if value.strip()]
+        return list(dict.fromkeys(cleaned))
 
 
 class PatternMagazineSummary(BaseModel):

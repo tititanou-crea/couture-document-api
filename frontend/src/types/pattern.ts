@@ -31,6 +31,7 @@ export type Pattern = {
   target_audiences: TargetAudience[];
   main_categories: PatternMainCategory[];
   project_types: ProjectType[];
+  available_sizes: string[];
   status: DocumentStatus;
   creator?: DocumentContributor | null;
   last_modifier?: DocumentContributor | null;

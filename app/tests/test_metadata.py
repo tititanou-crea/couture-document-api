@@ -29,6 +29,7 @@ async def test_metadata_lookup_finds_book_by_isbn(client: AsyncClient) -> None:
         "target_audiences": BOOK_PAYLOAD["target_audiences"],
         "main_categories": BOOK_PAYLOAD["main_categories"],
         "project_types": BOOK_PAYLOAD["project_types"],
+        "available_sizes": BOOK_PAYLOAD["available_sizes"],
         "includes_patterns": BOOK_PAYLOAD["includes_patterns"],
         "patterns": [],
     }
@@ -65,6 +66,7 @@ async def test_metadata_lookup_finds_magazine_by_ean(client: AsyncClient) -> Non
                     "target_audiences": ["women"],
                     "main_categories": ["clothing"],
                     "project_types": ["dress"],
+                    "available_sizes": ["36", "38"],
                 }
             ],
         },
@@ -98,6 +100,7 @@ async def test_metadata_lookup_finds_magazine_by_ean(client: AsyncClient) -> Non
             "target_audiences": ["women"],
             "main_categories": ["clothing"],
             "project_types": ["dress"],
+            "available_sizes": ["36", "38"],
         }
     ]
 
@@ -121,6 +124,7 @@ async def test_metadata_lookup_finds_magazine_by_title_and_issue(client: AsyncCl
     assert response.json()["target_audiences"] == MAGAZINE_PAYLOAD["target_audiences"]
     assert response.json()["main_categories"] == MAGAZINE_PAYLOAD["main_categories"]
     assert response.json()["project_types"] == MAGAZINE_PAYLOAD["project_types"]
+    assert response.json()["available_sizes"] == MAGAZINE_PAYLOAD["available_sizes"]
 
 
 async def test_metadata_lookup_accepts_magazine_issue_number_alias(
@@ -161,6 +165,7 @@ async def test_metadata_lookup_finds_pattern_by_model_name(client: AsyncClient) 
     assert response.json()["target_audiences"] == PATTERN_PAYLOAD["target_audiences"]
     assert response.json()["main_categories"] == PATTERN_PAYLOAD["main_categories"]
     assert response.json()["project_types"] == PATTERN_PAYLOAD["project_types"]
+    assert response.json()["available_sizes"] == PATTERN_PAYLOAD["available_sizes"]
     assert response.json()["patterns"] == [
         {
             "model_name": PATTERN_PAYLOAD["model_name"],
@@ -173,6 +178,7 @@ async def test_metadata_lookup_finds_pattern_by_model_name(client: AsyncClient) 
             "target_audiences": PATTERN_PAYLOAD["target_audiences"],
             "main_categories": PATTERN_PAYLOAD["main_categories"],
             "project_types": PATTERN_PAYLOAD["project_types"],
+            "available_sizes": PATTERN_PAYLOAD["available_sizes"],
         }
     ]
 
@@ -254,6 +260,7 @@ async def test_photo_metadata_extraction_prefills_pattern_fields(
             target_audiences=["women"],
             main_categories=["clothing"],
             project_types=["dress"],
+            available_sizes=["34", "36", "38"],
             extracted_text="Robe Magnolia Atelier Couture",
             confidence="high",
         )
@@ -278,6 +285,7 @@ async def test_photo_metadata_extraction_prefills_pattern_fields(
         "targetAudiences": ["women"],
         "mainCategories": ["clothing"],
         "projectTypes": ["dress"],
+        "availableSizes": ["34", "36", "38"],
         "extractedText": "Robe Magnolia Atelier Couture",
         "confidence": "high",
     }

@@ -112,8 +112,9 @@ async def extract_pattern_metadata_from_photo(
                             "informations visibles ou très probables. Réponds en JSON strict avec "
                             "les clés: modelName, designerName, format, description, "
                             "difficultyLevels, targetAudiences, mainCategories, projectTypes, "
-                            "extractedText, confidence. format vaut physical, digital, both "
-                            "ou null. "
+                            "availableSizes, extractedText, confidence. format vaut physical, "
+                            "digital, both ou null. availableSizes est une liste de tailles "
+                            "lisibles, par exemple 34, 36, S, M ou 2 ans. "
                             "difficultyLevels contient uniquement beginner, intermediate, "
                             "advanced. "
                             "targetAudiences contient uniquement women, men, children, baby, "
@@ -153,6 +154,7 @@ async def extract_pattern_metadata_from_photo(
             if category in {MainCategory.CLOTHING, MainCategory.ACCESSORIES}
         ],
         project_types=_clean_enum_list(parsed.get("projectTypes"), ProjectType),
+        available_sizes=_clean_string_list(parsed.get("availableSizes")),
         extracted_text=_clean_text(parsed.get("extractedText")) or raw_text,
         confidence=_clean_confidence(parsed.get("confidence")),
     )
@@ -296,6 +298,17 @@ def _clean_enum_list(value: Any, enum_class: type) -> list[Any]:
         enum_value = _clean_enum(item, enum_class)
         if enum_value is not None and enum_value not in cleaned:
             cleaned.append(enum_value)
+    return cleaned
+
+
+def _clean_string_list(value: Any) -> list[str]:
+    if not isinstance(value, list):
+        return []
+    cleaned = []
+    for item in value:
+        text = _clean_text(item)
+        if text is not None and text not in cleaned:
+            cleaned.append(text)
     return cleaned
 
 

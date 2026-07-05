@@ -101,6 +101,7 @@ class BookBase(BaseModel):
     main_categories: list[MainCategory] = Field(default_factory=list)
     project_types: list[ProjectType] = Field(default_factory=list)
     techniques: list[Technique] = Field(default_factory=list)
+    available_sizes: list[str] = Field(default_factory=list)
     includes_patterns: bool | None = None
     pattern_sheet_url: AnyHttpUrl | None = None
     pattern_sheet_second_url: AnyHttpUrl | None = None
@@ -134,7 +135,7 @@ class BookBase(BaseModel):
             raise ValueError("EAN invalide")
         return normalize_ean(value)
 
-    @field_validator("authors", "categories", "tags")
+    @field_validator("authors", "categories", "tags", "available_sizes")
     @classmethod
     def normalize_string_list(cls, values: list[str]) -> list[str]:
         return _clean_string_list(values)
@@ -178,6 +179,7 @@ class MagazinePatternCreate(BaseModel):
     target_audiences: list[TargetAudience] = Field(default_factory=list)
     main_categories: list[MainCategory] = Field(default_factory=list)
     project_types: list[ProjectType] = Field(default_factory=list)
+    available_sizes: list[str] = Field(default_factory=list)
 
     @field_validator("main_categories")
     @classmethod
@@ -215,6 +217,7 @@ class BookUpdate(BaseModel):
     main_categories: list[MainCategory] | None = None
     project_types: list[ProjectType] | None = None
     techniques: list[Technique] | None = None
+    available_sizes: list[str] | None = None
     includes_patterns: bool | None = None
     pattern_sheet_url: AnyHttpUrl | None = None
     pattern_sheet_second_url: AnyHttpUrl | None = None
@@ -251,7 +254,7 @@ class BookUpdate(BaseModel):
             raise ValueError("EAN invalide")
         return normalize_ean(value)
 
-    @field_validator("authors", "categories", "tags")
+    @field_validator("authors", "categories", "tags", "available_sizes")
     @classmethod
     def normalize_optional_string_list(cls, values: list[str] | None) -> list[str] | None:
         if values is None:
@@ -266,6 +269,7 @@ class BookPatternSummary(BaseModel):
     magazine_pattern_identifier: str | None = None
     cover_url: str | None = None
     second_cover_url: str | None = None
+    available_sizes: list[str] = Field(default_factory=list)
 
     model_config = ConfigDict(from_attributes=True)
 
