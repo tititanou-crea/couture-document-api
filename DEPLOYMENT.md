@@ -29,7 +29,7 @@ L'application convertit automatiquement cette URL vers le driver async requis.
 ```text
 DATABASE_URL=postgresql://user:password@host:5432/database
 BACKEND_CORS_ORIGINS=["https://votre-frontend.vercel.app"]
-BACKEND_CORS_ORIGIN_REGEX=^https?://(localhost|127\.0\.0\.1)(:[0-9]+)?$|^https://couture-document(-[a-z0-9-]+)?-tanou-projects\.vercel\.app$|^https://couture-document\.vercel\.app$
+BACKEND_CORS_ORIGIN_REGEX=^https?://(localhost|127\.0\.0\.1)(:[0-9]+)?$|^https://couture-document(-[a-z0-9-]+)?-tanou-projects\.vercel\.app$|^https://couture-document-api\.vercel\.app$|^https://couture-document\.vercel\.app$
 DEFAULT_ADMIN_EMAIL=votre-email
 DEFAULT_ADMIN_PASSWORD=un-mot-de-passe-fort
 DEFAULT_ADMIN_FIRST_NAME=Votre prenom

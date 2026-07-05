@@ -9,6 +9,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 DEFAULT_CORS_ORIGIN_REGEX = (
     r"^https?://(localhost|127\.0\.0\.1)(:[0-9]+)?$"
     r"|^https://couture-document(-[a-z0-9-]+)?-tanou-projects\.vercel\.app$"
+    r"|^https://couture-document-api\.vercel\.app$"
     r"|^https://couture-document\.vercel\.app$"
 )
 
