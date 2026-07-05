@@ -1,8 +1,9 @@
 import { decodeJwtPayload } from "@/utils/jwt";
 
-export const API_URL =
+const RAW_API_URL =
   process.env.NEXT_PUBLIC_API_URL ??
   (process.env.NODE_ENV === "development" ? "http://localhost:8000/api/v1" : "");
+export const API_URL = normalizeApiUrl(RAW_API_URL);
 export const API_ORIGIN = API_URL.replace(/\/api\/v\d+\/?$/, "");
 export const TOKEN_COOKIE = "bibliocouture_token";
 const GET_CACHE_TTL_MS = 15_000;
@@ -176,5 +177,23 @@ function getTokenMaxAge(token: string) {
     return Math.max(0, Math.floor(payload.exp - Date.now() / 1000));
   } catch {
     return 60 * 60;
+  }
+}
+
+function normalizeApiUrl(value: string) {
+  const trimmed = value.trim().replace(/\/+$/, "");
+  if (!trimmed) return "";
+
+  try {
+    const url = new URL(trimmed);
+    if (url.hostname.endsWith(".onrender.com") && url.protocol === "http:") {
+      url.protocol = "https:";
+    }
+    if (!/\/api\/v\d+$/.test(url.pathname)) {
+      url.pathname = `${url.pathname.replace(/\/+$/, "")}/api/v1`;
+    }
+    return url.toString().replace(/\/+$/, "");
+  } catch {
+    return trimmed;
   }
 }
