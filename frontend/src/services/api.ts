@@ -186,6 +186,13 @@ function normalizeApiUrl(value: string) {
 
   try {
     const url = new URL(trimmed);
+    if (
+      typeof window !== "undefined" &&
+      window.location.hostname.endsWith(".vercel.app") &&
+      url.hostname.endsWith(".onrender.com")
+    ) {
+      return "/api/v1";
+    }
     if (url.hostname.endsWith(".onrender.com") && url.protocol === "http:") {
       url.protocol = "https:";
     }
