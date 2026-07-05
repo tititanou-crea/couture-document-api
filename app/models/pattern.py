@@ -52,3 +52,6 @@ class Pattern(UUIDPrimaryKeyMixin, TimestampMixin, ValidationWorkflowMixin, Base
     available_sizes: Mapped[list[str]] = mapped_column(
         StringList(40), nullable=False, default=list
     )
+    available_size_ranges: Mapped[list[str]] = mapped_column(
+        StringList(40), nullable=False, default=list
+    )

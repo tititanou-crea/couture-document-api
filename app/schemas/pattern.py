@@ -28,14 +28,15 @@ class PatternBase(BaseModel):
     main_categories: list[MainCategory] = Field(default_factory=list)
     project_types: list[ProjectType] = Field(default_factory=list)
     available_sizes: list[str] = Field(default_factory=list)
+    available_size_ranges: list[str] = Field(default_factory=list)
     status: DocumentStatus = DocumentStatus.DRAFT
     created_by: uuid.UUID | None = None
     validated_by: uuid.UUID | None = None
     validated_at: datetime | None = None
 
-    @field_validator("available_sizes")
+    @field_validator("available_sizes", "available_size_ranges")
     @classmethod
-    def normalize_available_sizes(cls, values: list[str]) -> list[str]:
+    def normalize_size_lists(cls, values: list[str]) -> list[str]:
         cleaned = [value.strip() for value in values if value.strip()]
         return list(dict.fromkeys(cleaned))
 
@@ -88,6 +89,7 @@ class PatternUpdate(BaseModel):
     main_categories: list[MainCategory] | None = None
     project_types: list[ProjectType] | None = None
     available_sizes: list[str] | None = None
+    available_size_ranges: list[str] | None = None
     status: DocumentStatus | None = None
     created_by: uuid.UUID | None = None
     validated_by: uuid.UUID | None = None
@@ -102,9 +104,9 @@ class PatternUpdate(BaseModel):
             raise ValueError("La categorie technique n'est pas disponible pour les patrons")
         return values
 
-    @field_validator("available_sizes")
+    @field_validator("available_sizes", "available_size_ranges")
     @classmethod
-    def normalize_available_sizes(cls, values: list[str] | None) -> list[str] | None:
+    def normalize_size_lists(cls, values: list[str] | None) -> list[str] | None:
         if values is None:
             return values
         cleaned = [value.strip() for value in values if value.strip()]

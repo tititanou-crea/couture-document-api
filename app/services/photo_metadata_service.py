@@ -112,9 +112,11 @@ async def extract_pattern_metadata_from_photo(
                             "informations visibles ou très probables. Réponds en JSON strict avec "
                             "les clés: modelName, designerName, format, description, "
                             "difficultyLevels, targetAudiences, mainCategories, projectTypes, "
-                            "availableSizes, extractedText, confidence. format vaut physical, "
-                            "digital, both ou null. availableSizes est une liste de tailles "
-                            "lisibles, par exemple 34, 36, S, M ou 2 ans. "
+                            "availableSizes, availableSizeRanges, extractedText, confidence. "
+                            "format vaut physical, digital, both ou null. availableSizes est "
+                            "une liste de tailles lisibles, par exemple 34, 36, S, M ou 2 ans. "
+                            "availableSizeRanges est une liste d'intervalles lisibles, par "
+                            "exemple 34-46, XS-XL ou 2-10 ans. "
                             "difficultyLevels contient uniquement beginner, intermediate, "
                             "advanced. "
                             "targetAudiences contient uniquement women, men, children, baby, "
@@ -155,6 +157,7 @@ async def extract_pattern_metadata_from_photo(
         ],
         project_types=_clean_enum_list(parsed.get("projectTypes"), ProjectType),
         available_sizes=_clean_string_list(parsed.get("availableSizes")),
+        available_size_ranges=_clean_string_list(parsed.get("availableSizeRanges")),
         extracted_text=_clean_text(parsed.get("extractedText")) or raw_text,
         confidence=_clean_confidence(parsed.get("confidence")),
     )

@@ -102,6 +102,7 @@ class BookBase(BaseModel):
     project_types: list[ProjectType] = Field(default_factory=list)
     techniques: list[Technique] = Field(default_factory=list)
     available_sizes: list[str] = Field(default_factory=list)
+    available_size_ranges: list[str] = Field(default_factory=list)
     includes_patterns: bool | None = None
     pattern_sheet_url: AnyHttpUrl | None = None
     pattern_sheet_second_url: AnyHttpUrl | None = None
@@ -135,7 +136,13 @@ class BookBase(BaseModel):
             raise ValueError("EAN invalide")
         return normalize_ean(value)
 
-    @field_validator("authors", "categories", "tags", "available_sizes")
+    @field_validator(
+        "authors",
+        "categories",
+        "tags",
+        "available_sizes",
+        "available_size_ranges",
+    )
     @classmethod
     def normalize_string_list(cls, values: list[str]) -> list[str]:
         return _clean_string_list(values)
@@ -180,6 +187,7 @@ class MagazinePatternCreate(BaseModel):
     main_categories: list[MainCategory] = Field(default_factory=list)
     project_types: list[ProjectType] = Field(default_factory=list)
     available_sizes: list[str] = Field(default_factory=list)
+    available_size_ranges: list[str] = Field(default_factory=list)
 
     @field_validator("main_categories")
     @classmethod
@@ -218,6 +226,7 @@ class BookUpdate(BaseModel):
     project_types: list[ProjectType] | None = None
     techniques: list[Technique] | None = None
     available_sizes: list[str] | None = None
+    available_size_ranges: list[str] | None = None
     includes_patterns: bool | None = None
     pattern_sheet_url: AnyHttpUrl | None = None
     pattern_sheet_second_url: AnyHttpUrl | None = None
@@ -254,7 +263,13 @@ class BookUpdate(BaseModel):
             raise ValueError("EAN invalide")
         return normalize_ean(value)
 
-    @field_validator("authors", "categories", "tags", "available_sizes")
+    @field_validator(
+        "authors",
+        "categories",
+        "tags",
+        "available_sizes",
+        "available_size_ranges",
+    )
     @classmethod
     def normalize_optional_string_list(cls, values: list[str] | None) -> list[str] | None:
         if values is None:
@@ -270,6 +285,7 @@ class BookPatternSummary(BaseModel):
     cover_url: str | None = None
     second_cover_url: str | None = None
     available_sizes: list[str] = Field(default_factory=list)
+    available_size_ranges: list[str] = Field(default_factory=list)
 
     model_config = ConfigDict(from_attributes=True)
 

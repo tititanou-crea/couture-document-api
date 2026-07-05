@@ -32,6 +32,7 @@ export type Pattern = {
   main_categories: PatternMainCategory[];
   project_types: ProjectType[];
   available_sizes: string[];
+  available_size_ranges: string[];
   status: DocumentStatus;
   creator?: DocumentContributor | null;
   last_modifier?: DocumentContributor | null;

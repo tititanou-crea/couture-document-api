@@ -40,6 +40,7 @@ type PatternFormState = {
   main_categories: PatternPayload["main_categories"];
   project_types: PatternPayload["project_types"];
   availableSizes: string;
+  availableSizeRanges: string;
 };
 
 type PatternFormProps = {
@@ -62,6 +63,7 @@ function initialState(pattern?: Pattern | null): PatternFormState {
     main_categories: pattern?.main_categories ?? [],
     project_types: pattern?.project_types ?? [],
     availableSizes: pattern?.available_sizes.join(", ") ?? "",
+    availableSizeRanges: pattern?.available_size_ranges.join(", ") ?? "",
   };
 }
 
@@ -108,6 +110,7 @@ export function PatternForm({ initialPattern, submitLabel, onSubmit }: PatternFo
       main_categories: form.main_categories,
       project_types: form.project_types,
       available_sizes: parseCommaList(form.availableSizes),
+      available_size_ranges: parseCommaList(form.availableSizeRanges),
       status: "draft",
       created_by: null,
       validated_by: null,
@@ -150,6 +153,8 @@ export function PatternForm({ initialPattern, submitLabel, onSubmit }: PatternFo
           ]),
       availableSizes:
         current.availableSizes || metadata.availableSizes?.join(", ") || "",
+      availableSizeRanges:
+        current.availableSizeRanges || metadata.availableSizeRanges?.join(", ") || "",
     }));
   }
 
@@ -201,6 +206,7 @@ export function PatternForm({ initialPattern, submitLabel, onSubmit }: PatternFo
           </label>
           <TextField label="Repère sur la planche" value={form.magazinePatternIdentifier} onChange={(event) => update("magazinePatternIdentifier", event.target.value)} placeholder="Ex. M1, 12A, modèle 104" />
           <TextField label="Tailles disponibles" value={form.availableSizes} onChange={(event) => update("availableSizes", event.target.value)} placeholder="Ex. 34, 36, 38, 40 ou S, M, L" help="Facultatif. Séparez les tailles par une virgule." />
+          <TextField label="Intervalles de tailles" value={form.availableSizeRanges} onChange={(event) => update("availableSizeRanges", event.target.value)} placeholder="Ex. 34-46, XS-XL, 2-10 ans" help="Facultatif. Séparez les intervalles par une virgule." />
         </div>
         {initialPattern?.source_magazine ? (
           <div className="mt-4 rounded-md bg-linen px-4 py-3 text-sm font-semibold text-rosewood">

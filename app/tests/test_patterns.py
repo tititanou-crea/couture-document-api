@@ -12,6 +12,7 @@ PATTERN_PAYLOAD = {
     "main_categories": ["clothing"],
     "project_types": ["dress"],
     "available_sizes": ["34", "36", "38"],
+    "available_size_ranges": ["34-46"],
     "status": "draft",
 }
 
@@ -27,6 +28,7 @@ async def test_create_and_get_pattern(client: AsyncClient) -> None:
     assert created["second_cover_url"] == PATTERN_PAYLOAD["second_cover_url"]
     assert created["main_categories"] == ["clothing"]
     assert created["available_sizes"] == ["34", "36", "38"]
+    assert created["available_size_ranges"] == ["34-46"]
     assert created["creator"]["first_name"] == "Tania"
     assert created["last_modifier"] == created["creator"]
 
@@ -82,6 +84,17 @@ async def test_search_patterns_by_available_size(client: AsyncClient) -> None:
     payload = response.json()
     assert payload["total"] == 1
     assert payload["items"][0]["available_sizes"] == ["34", "36", "38"]
+
+
+async def test_search_patterns_by_available_size_range(client: AsyncClient) -> None:
+    await client.post("/api/v1/patterns", json=PATTERN_PAYLOAD)
+
+    response = await client.get("/api/v1/patterns/search?q=34-46")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["total"] == 1
+    assert payload["items"][0]["available_size_ranges"] == ["34-46"]
 
 
 async def test_search_patterns_by_french_project_type(client: AsyncClient) -> None:

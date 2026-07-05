@@ -24,6 +24,7 @@ export type ExtractedPatternMetadata = {
   mainCategories?: string[];
   projectTypes?: string[];
   availableSizes?: string[];
+  availableSizeRanges?: string[];
   coverUrl?: string | null;
   extractedText?: string | null;
   confidence?: "high" | "medium" | "low" | null;

@@ -30,6 +30,7 @@ async def test_metadata_lookup_finds_book_by_isbn(client: AsyncClient) -> None:
         "main_categories": BOOK_PAYLOAD["main_categories"],
         "project_types": BOOK_PAYLOAD["project_types"],
         "available_sizes": BOOK_PAYLOAD["available_sizes"],
+        "available_size_ranges": BOOK_PAYLOAD["available_size_ranges"],
         "includes_patterns": BOOK_PAYLOAD["includes_patterns"],
         "patterns": [],
     }
@@ -67,6 +68,7 @@ async def test_metadata_lookup_finds_magazine_by_ean(client: AsyncClient) -> Non
                     "main_categories": ["clothing"],
                     "project_types": ["dress"],
                     "available_sizes": ["36", "38"],
+                    "available_size_ranges": ["36-42"],
                 }
             ],
         },
@@ -101,6 +103,7 @@ async def test_metadata_lookup_finds_magazine_by_ean(client: AsyncClient) -> Non
             "main_categories": ["clothing"],
             "project_types": ["dress"],
             "available_sizes": ["36", "38"],
+            "available_size_ranges": ["36-42"],
         }
     ]
 
@@ -125,6 +128,7 @@ async def test_metadata_lookup_finds_magazine_by_title_and_issue(client: AsyncCl
     assert response.json()["main_categories"] == MAGAZINE_PAYLOAD["main_categories"]
     assert response.json()["project_types"] == MAGAZINE_PAYLOAD["project_types"]
     assert response.json()["available_sizes"] == MAGAZINE_PAYLOAD["available_sizes"]
+    assert response.json()["available_size_ranges"] == MAGAZINE_PAYLOAD["available_size_ranges"]
 
 
 async def test_metadata_lookup_accepts_magazine_issue_number_alias(
@@ -166,6 +170,7 @@ async def test_metadata_lookup_finds_pattern_by_model_name(client: AsyncClient) 
     assert response.json()["main_categories"] == PATTERN_PAYLOAD["main_categories"]
     assert response.json()["project_types"] == PATTERN_PAYLOAD["project_types"]
     assert response.json()["available_sizes"] == PATTERN_PAYLOAD["available_sizes"]
+    assert response.json()["available_size_ranges"] == PATTERN_PAYLOAD["available_size_ranges"]
     assert response.json()["patterns"] == [
         {
             "model_name": PATTERN_PAYLOAD["model_name"],
@@ -179,6 +184,7 @@ async def test_metadata_lookup_finds_pattern_by_model_name(client: AsyncClient) 
             "main_categories": PATTERN_PAYLOAD["main_categories"],
             "project_types": PATTERN_PAYLOAD["project_types"],
             "available_sizes": PATTERN_PAYLOAD["available_sizes"],
+            "available_size_ranges": PATTERN_PAYLOAD["available_size_ranges"],
         }
     ]
 
@@ -261,6 +267,7 @@ async def test_photo_metadata_extraction_prefills_pattern_fields(
             main_categories=["clothing"],
             project_types=["dress"],
             available_sizes=["34", "36", "38"],
+            available_size_ranges=["34-46"],
             extracted_text="Robe Magnolia Atelier Couture",
             confidence="high",
         )
@@ -286,6 +293,7 @@ async def test_photo_metadata_extraction_prefills_pattern_fields(
         "mainCategories": ["clothing"],
         "projectTypes": ["dress"],
         "availableSizes": ["34", "36", "38"],
+        "availableSizeRanges": ["34-46"],
         "extractedText": "Robe Magnolia Atelier Couture",
         "confidence": "high",
     }

@@ -58,6 +58,9 @@ class Book(BaseDocumentMixin, ValidationWorkflowMixin, Base):
     available_sizes: Mapped[list[str]] = mapped_column(
         StringList(40), nullable=False, default=list
     )
+    available_size_ranges: Mapped[list[str]] = mapped_column(
+        StringList(40), nullable=False, default=list
+    )
     includes_patterns: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
     pattern_sheet_url: Mapped[str | None] = mapped_column(String(2048), nullable=True)
     pattern_sheet_second_url: Mapped[str | None] = mapped_column(String(2048), nullable=True)

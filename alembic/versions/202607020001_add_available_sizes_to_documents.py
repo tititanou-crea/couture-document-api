@@ -20,18 +20,20 @@ depends_on: str | Sequence[str] | None = None
 
 def upgrade() -> None:
     for table_name in ("books", "patterns"):
-        op.add_column(
-            table_name,
-            sa.Column(
-                "available_sizes",
-                postgresql.ARRAY(sa.String(length=40)),
-                server_default="{}",
-                nullable=False,
-            ),
-        )
-        op.alter_column(table_name, "available_sizes", server_default=None)
+        for column_name in ("available_sizes", "available_size_ranges"):
+            op.add_column(
+                table_name,
+                sa.Column(
+                    column_name,
+                    postgresql.ARRAY(sa.String(length=40)),
+                    server_default="{}",
+                    nullable=False,
+                ),
+            )
+            op.alter_column(table_name, column_name, server_default=None)
 
 
 def downgrade() -> None:
     for table_name in ("patterns", "books"):
+        op.drop_column(table_name, "available_size_ranges")
         op.drop_column(table_name, "available_sizes")

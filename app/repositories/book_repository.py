@@ -121,6 +121,7 @@ class BookRepository:
             main_categories=book.main_categories,
             project_types=book.project_types,
             available_sizes=book.available_sizes,
+            available_size_ranges=book.available_size_ranges,
             includes_patterns=book.includes_patterns,
             patterns=[
                 MetadataPatternSummary.model_validate(pattern, from_attributes=True)
@@ -156,6 +157,7 @@ class BookRepository:
         project_types_text = self._text_from_list_column(Book.project_types)
         techniques_text = self._text_from_list_column(Book.techniques)
         available_sizes_text = self._text_from_list_column(Book.available_sizes)
+        available_size_ranges_text = self._text_from_list_column(Book.available_size_ranges)
         pattern_difficulty_levels_text = self._text_from_list_column(Pattern.difficulty_levels)
         pattern_target_audiences_text = self._text_from_list_column(Pattern.target_audiences)
         pattern_main_categories_text = self._text_from_list_column(Pattern.main_categories)
@@ -181,6 +183,7 @@ class BookRepository:
                 *self._like_any(project_types_text, search_patterns),
                 *self._like_any(techniques_text, search_patterns),
                 *self._like_any(available_sizes_text, search_patterns),
+                *self._like_any(available_size_ranges_text, search_patterns),
                 *[
                     Book.patterns.any(func.lower(Pattern.model_name).like(pattern))
                     for pattern in search_patterns

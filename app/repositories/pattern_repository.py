@@ -59,6 +59,7 @@ class PatternRepository:
         main_categories_text = self._text_from_list_column(Pattern.main_categories)
         project_types_text = self._text_from_list_column(Pattern.project_types)
         available_sizes_text = self._text_from_list_column(Pattern.available_sizes)
+        available_size_ranges_text = self._text_from_list_column(Pattern.available_size_ranges)
         statement = select(Pattern).where(
             or_(
                 *self._like_any(Pattern.model_name, search_patterns),
@@ -72,6 +73,7 @@ class PatternRepository:
                 *self._like_any(main_categories_text, search_patterns),
                 *self._like_any(project_types_text, search_patterns),
                 *self._like_any(available_sizes_text, search_patterns),
+                *self._like_any(available_size_ranges_text, search_patterns),
                 *[
                     Pattern.source_magazine.has(func.lower(Book.title).like(pattern))
                     for pattern in search_patterns
@@ -168,6 +170,7 @@ class PatternRepository:
             main_categories=pattern.main_categories,
             project_types=pattern.project_types,
             available_sizes=pattern.available_sizes,
+            available_size_ranges=pattern.available_size_ranges,
             includes_patterns=True,
             patterns=[summary],
         )

@@ -44,6 +44,7 @@ type BookFormState = {
   project_types: BookPayload["project_types"];
   techniques: BookPayload["techniques"];
   availableSizes: string;
+  availableSizeRanges: string;
   includesPatterns: IncludesPatternsChoice;
   otherProject: string;
   otherTechnique: string;
@@ -63,6 +64,7 @@ type MagazinePatternFormState = {
   main_categories: PatternMainCategory[];
   project_types: BookPayload["project_types"];
   availableSizes: string;
+  availableSizeRanges: string;
 };
 
 type BookFormProps = {
@@ -95,6 +97,7 @@ function initialState(book?: Book | null, documentType?: BookPayload["document_t
     project_types: book?.project_types ?? [],
     techniques: book?.techniques ?? [],
     availableSizes: book?.available_sizes.join(", ") ?? "",
+    availableSizeRanges: book?.available_size_ranges.join(", ") ?? "",
     includesPatterns:
       book?.includes_patterns === true ? "yes" : book?.includes_patterns === false ? "no" : "unknown",
     otherProject: "",
@@ -190,6 +193,7 @@ export function BookForm({ initialBook, documentType, submitLabel, onSubmit }: B
       project_types: form.project_types,
       techniques: form.techniques,
       available_sizes: parseCommaList(form.availableSizes),
+      available_size_ranges: parseCommaList(form.availableSizeRanges),
       includes_patterns:
         form.includesPatterns === "unknown" ? null : form.includesPatterns === "yes",
       magazine_patterns:
@@ -210,6 +214,7 @@ export function BookForm({ initialBook, documentType, submitLabel, onSubmit }: B
                 main_categories: pattern.main_categories,
                 project_types: pattern.project_types,
                 available_sizes: parseCommaList(pattern.availableSizes),
+                available_size_ranges: parseCommaList(pattern.availableSizeRanges),
               }))
           : [],
       status: "draft",
@@ -239,6 +244,7 @@ export function BookForm({ initialBook, documentType, submitLabel, onSubmit }: B
           ),
           project_types: current.project_types,
           availableSizes: current.availableSizes,
+          availableSizeRanges: current.availableSizeRanges,
         },
       ],
     }));
@@ -371,6 +377,9 @@ export function BookForm({ initialBook, documentType, submitLabel, onSubmit }: B
           <div className="lg:col-span-6">
             <TextField label="Tailles disponibles" value={form.availableSizes} onChange={(event) => update("availableSizes", event.target.value)} placeholder="Ex. 34, 36, 38, 40 ou S, M, L" help="Facultatif. Séparez les tailles par une virgule." />
           </div>
+          <div className="lg:col-span-6">
+            <TextField label="Intervalles de tailles" value={form.availableSizeRanges} onChange={(event) => update("availableSizeRanges", event.target.value)} placeholder="Ex. 34-46, XS-XL, 2-10 ans" help="Facultatif. Séparez les intervalles par une virgule." />
+          </div>
         </div>
       </SectionCard>
 
@@ -448,6 +457,7 @@ export function BookForm({ initialBook, documentType, submitLabel, onSubmit }: B
                     <TextField label="Nom descriptif" value={pattern.modelName} onChange={(event) => updateMagazinePattern(pattern.id, "modelName", event.target.value)} placeholder="Ex. Jupe en jean" />
                     <TextField label="Repère sur la planche" value={pattern.identifier} onChange={(event) => updateMagazinePattern(pattern.id, "identifier", event.target.value)} placeholder="Ex. M1, 12A, modèle 104" />
                     <TextField label="Tailles disponibles" value={pattern.availableSizes} onChange={(event) => updateMagazinePattern(pattern.id, "availableSizes", event.target.value)} placeholder="Ex. 36, 38, 40 ou S, M, L" help="Facultatif. Séparez les tailles par une virgule." />
+                    <TextField label="Intervalles de tailles" value={pattern.availableSizeRanges} onChange={(event) => updateMagazinePattern(pattern.id, "availableSizeRanges", event.target.value)} placeholder="Ex. 34-46, XS-XL, 2-10 ans" help="Facultatif. Séparez les intervalles par une virgule." />
                     <label>
                       <span className="label">Format</span>
                       <select className="field" value={pattern.format} onChange={(event) => updateMagazinePattern(pattern.id, "format", event.target.value as MagazinePatternFormState["format"])}>
