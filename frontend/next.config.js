@@ -8,6 +8,10 @@ const nextConfig = {
         source: "/api/v1/:path*",
         destination: "https://couture-document-api.onrender.com/api/v1/:path*",
       },
+      {
+        source: "/media/uploads/:path*",
+        destination: "https://couture-document-api.onrender.com/media/uploads/:path*",
+      },
     ];
   },
 };
