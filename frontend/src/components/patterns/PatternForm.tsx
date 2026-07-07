@@ -1,4 +1,4 @@
-import { useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { Save } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { CheckboxGroup } from "@/components/ui/CheckboxGroup";
@@ -34,6 +34,7 @@ type PatternFormState = {
   description: string;
   coverUrl: string | null;
   secondCoverUrl: string | null;
+  measurementChartUrl: string | null;
   magazinePatternIdentifier: string;
   difficulty_levels: PatternPayload["difficulty_levels"];
   target_audiences: PatternPayload["target_audiences"];
@@ -41,12 +42,14 @@ type PatternFormState = {
   project_types: PatternPayload["project_types"];
   availableSizes: string;
   availableSizeRanges: string;
+  sizeEntries: string;
 };
 
 type PatternFormProps = {
   initialPattern?: Pattern | null;
   submitLabel: string;
   onSubmit: (payload: PatternPayload) => Promise<void>;
+  onAutoSave?: (payload: PatternPayload) => Promise<void>;
 };
 
 function initialState(pattern?: Pattern | null): PatternFormState {
@@ -57,6 +60,7 @@ function initialState(pattern?: Pattern | null): PatternFormState {
     description: pattern?.description ?? "",
     coverUrl: pattern?.cover_url ?? null,
     secondCoverUrl: pattern?.second_cover_url ?? null,
+    measurementChartUrl: pattern?.measurement_chart_url ?? pattern?.source_magazine?.measurement_chart_url ?? null,
     magazinePatternIdentifier: pattern?.magazine_pattern_identifier ?? "",
     difficulty_levels: pattern?.difficulty_levels ?? [],
     target_audiences: pattern?.target_audiences ?? [],
@@ -64,13 +68,17 @@ function initialState(pattern?: Pattern | null): PatternFormState {
     project_types: pattern?.project_types ?? [],
     availableSizes: pattern?.available_sizes.join(", ") ?? "",
     availableSizeRanges: pattern?.available_size_ranges.join(", ") ?? "",
+    sizeEntries: formatSizeEntries(pattern?.available_sizes, pattern?.available_size_ranges),
   };
 }
 
-export function PatternForm({ initialPattern, submitLabel, onSubmit }: PatternFormProps) {
+export function PatternForm({ initialPattern, submitLabel, onSubmit, onAutoSave }: PatternFormProps) {
   const [form, setForm] = useState<PatternFormState>(() => initialState(initialPattern));
   const [saving, setSaving] = useState(false);
+  const [autoSaveStatus, setAutoSaveStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const lastAutoSavedPayload = useRef("");
+  const autoSaving = useRef(false);
   const isMagazinePattern = Boolean(initialPattern?.source_magazine);
   const sourceMagazineName = initialPattern?.source_magazine?.title ?? "";
 
@@ -91,6 +99,29 @@ export function PatternForm({ initialPattern, submitLabel, onSubmit }: PatternFo
     ]
   );
 
+  useEffect(() => {
+    if (!onAutoSave) return;
+    const interval = window.setInterval(() => {
+      if (!canSave || autoSaving.current) return;
+      const payload = buildPayload();
+      const serialized = JSON.stringify(payload);
+      if (serialized === lastAutoSavedPayload.current) return;
+
+      autoSaving.current = true;
+      onAutoSave(payload)
+        .then(() => {
+          lastAutoSavedPayload.current = serialized;
+          setAutoSaveStatus(`Brouillon sauvegardé automatiquement à ${new Date().toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}.`);
+        })
+        .catch(() => setAutoSaveStatus("La sauvegarde automatique n’a pas pu se faire."))
+        .finally(() => {
+          autoSaving.current = false;
+        });
+    }, 5 * 60 * 1000);
+
+    return () => window.clearInterval(interval);
+  });
+
   function update<K extends keyof PatternFormState>(key: K, value: PatternFormState[K]) {
     setForm((current) => ({ ...current, [key]: value }));
   }
@@ -103,14 +134,15 @@ export function PatternForm({ initialPattern, submitLabel, onSubmit }: PatternFo
       description: form.description.trim() || null,
       cover_url: form.coverUrl,
       second_cover_url: form.secondCoverUrl,
+      measurement_chart_url: form.measurementChartUrl,
       magazine_pattern_identifier: form.magazinePatternIdentifier.trim() || null,
       source_magazine_id: initialPattern?.source_magazine_id ?? null,
       difficulty_levels: form.difficulty_levels,
       target_audiences: form.target_audiences,
       main_categories: form.main_categories,
       project_types: form.project_types,
-      available_sizes: parseCommaList(form.availableSizes),
-      available_size_ranges: parseCommaList(form.availableSizeRanges),
+      available_sizes: parseSizeEntries(form.sizeEntries).sizes,
+      available_size_ranges: parseSizeEntries(form.sizeEntries).ranges,
       status: "draft",
       created_by: null,
       validated_by: null,
@@ -155,6 +187,8 @@ export function PatternForm({ initialPattern, submitLabel, onSubmit }: PatternFo
         current.availableSizes || metadata.availableSizes?.join(", ") || "",
       availableSizeRanges:
         current.availableSizeRanges || metadata.availableSizeRanges?.join(", ") || "",
+      sizeEntries:
+        current.sizeEntries || formatSizeEntries(metadata.availableSizes, metadata.availableSizeRanges),
     }));
   }
 
@@ -174,6 +208,7 @@ export function PatternForm({ initialPattern, submitLabel, onSubmit }: PatternFo
   return (
     <form className="space-y-6" onSubmit={handleSubmit}>
       {error ? <Notice type="error">{error}</Notice> : null}
+      {autoSaveStatus ? <Notice>{autoSaveStatus}</Notice> : null}
 
       <SectionCard
         title="Assistant photo"
@@ -205,8 +240,13 @@ export function PatternForm({ initialPattern, submitLabel, onSubmit }: PatternFo
             </select>
           </label>
           <TextField label="Repère sur la planche" value={form.magazinePatternIdentifier} onChange={(event) => update("magazinePatternIdentifier", event.target.value)} placeholder="Ex. M1, 12A, modèle 104" />
-          <TextField label="Tailles disponibles" value={form.availableSizes} onChange={(event) => update("availableSizes", event.target.value)} placeholder="Ex. 34, 36, 38, 40 ou S, M, L" help="Facultatif. Séparez les tailles par une virgule." />
-          <TextField label="Intervalles de tailles" value={form.availableSizeRanges} onChange={(event) => update("availableSizeRanges", event.target.value)} placeholder="Ex. 34-46, XS-XL, 2-10 ans" help="Facultatif. Séparez les intervalles par une virgule." />
+          <TextField
+            label="Tailles ou intervalles"
+            value={form.sizeEntries}
+            onChange={(event) => update("sizeEntries", event.target.value)}
+            placeholder="Ex. 34, 36, 38, 40, S, M, L, 34-46, XS-XL, 2-10 ans"
+            help="Séparez chaque élément par une virgule. Tailles seules : 34, 36, S, M. Intervalles : 34-46, XS-XL, 2-10 ans."
+          />
         </div>
         {initialPattern?.source_magazine ? (
           <div className="mt-4 rounded-md bg-linen px-4 py-3 text-sm font-semibold text-rosewood">
@@ -250,6 +290,13 @@ export function PatternForm({ initialPattern, submitLabel, onSubmit }: PatternFo
               onChange={(url) => update("secondCoverUrl", url)}
             />
           </div>
+          <div className="xl:col-span-2">
+            <p className="label">Tableau des mensurations (facultatif)</p>
+            <CoverUpload
+              value={form.measurementChartUrl}
+              onChange={(url) => update("measurementChartUrl", url)}
+            />
+          </div>
         </div>
       </SectionCard>
 
@@ -279,4 +326,21 @@ function parseCommaList(value: string) {
         .filter(Boolean)
     )
   );
+}
+
+function parseSizeEntries(value: string) {
+  const entries = parseCommaList(value);
+  return {
+    sizes: entries.filter((entry) => !isSizeRange(entry)),
+    ranges: entries.filter(isSizeRange),
+  };
+}
+
+function isSizeRange(value: string) {
+  const normalized = value.trim().toLowerCase();
+  return /\S\s*[-–—]\s*\S/.test(normalized) || /\b(?:a|à|au|aux|jusqu)/.test(normalized);
+}
+
+function formatSizeEntries(sizes: string[] = [], ranges: string[] = []) {
+  return [...sizes, ...ranges].join(", ");
 }

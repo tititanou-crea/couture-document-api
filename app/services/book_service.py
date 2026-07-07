@@ -24,7 +24,12 @@ def _to_model_values(
     payload: BookCreate | BookUpdate, *, exclude_unset: bool = False
 ) -> dict[str, object]:
     values = payload.model_dump(exclude_unset=exclude_unset, exclude={"magazine_patterns"})
-    for url_field in ("cover_url", "pattern_sheet_url", "pattern_sheet_second_url"):
+    for url_field in (
+        "cover_url",
+        "pattern_sheet_url",
+        "pattern_sheet_second_url",
+        "measurement_chart_url",
+    ):
         if values.get(url_field) is not None:
             values[url_field] = str(values[url_field])
     return values
@@ -169,7 +174,7 @@ class BookService:
         fallback_designer = book.title or book.publisher
         for pattern_payload in pattern_payloads:
             pattern_values = pattern_payload.model_dump()
-            for url_field in ("cover_url", "second_cover_url"):
+            for url_field in ("cover_url", "second_cover_url", "measurement_chart_url"):
                 if pattern_values.get(url_field) is not None:
                     pattern_values[url_field] = str(pattern_values[url_field])
             if pattern_values.get("designer_name") is None and fallback_designer:
@@ -178,6 +183,8 @@ class BookService:
                 pattern_values["cover_url"] = (
                     book.pattern_sheet_url or book.pattern_sheet_second_url
                 )
+            if pattern_values.get("measurement_chart_url") is None:
+                pattern_values["measurement_chart_url"] = book.measurement_chart_url
             pattern_values["source_magazine_id"] = book.id
             pattern_values["status"] = book.status
             pattern_values["created_by"] = book.created_by

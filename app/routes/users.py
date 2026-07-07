@@ -1,4 +1,5 @@
 from typing import Annotated
+import uuid
 
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -6,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.auth import require_admin
 from app.db.session import get_db_session
 from app.models.user import User
-from app.schemas.user import UserCreateByAdmin, UserRead
+from app.schemas.user import AdminPasswordResetRequest, UserCreateByAdmin, UserRead
 from app.services.user_service import UserService
 
 router = APIRouter(
@@ -35,3 +36,12 @@ async def create_user(
     service: Annotated[UserService, Depends(get_user_service)],
 ) -> User:
     return await service.create_user(payload)
+
+
+@router.post("/{user_id}/password", response_model=UserRead)
+async def reset_user_password(
+    user_id: uuid.UUID,
+    payload: AdminPasswordResetRequest,
+    service: Annotated[UserService, Depends(get_user_service)],
+) -> User:
+    return await service.reset_user_password(user_id, payload)

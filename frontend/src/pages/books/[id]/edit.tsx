@@ -38,6 +38,7 @@ export default function EditBookPage() {
           documentType={book.data.document_type}
           submitLabel="Enregistrer les modifications"
           onSubmit={handleSubmit}
+          onAutoSave={(payload) => updateBook(id, payload).then(() => undefined)}
         />
       ) : null}
     </AppLayout>

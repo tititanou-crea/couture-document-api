@@ -5,8 +5,8 @@ import { AppLayout } from "@/layouts/AppLayout";
 import { BookForm } from "@/components/books/BookForm";
 import { PatternForm } from "@/components/patterns/PatternForm";
 import { Button } from "@/components/ui/Button";
-import { createBook } from "@/services/books";
-import { createPattern } from "@/services/patterns";
+import { createBook, updateBook } from "@/services/books";
+import { createPattern, updatePattern } from "@/services/patterns";
 import type { BookPayload, DocumentType } from "@/types/book";
 import type { PatternPayload } from "@/types/pattern";
 
@@ -47,15 +47,49 @@ const subtitles = {
 export default function AddDocumentPage() {
   const router = useRouter();
   const [selectedType, setSelectedType] = useState<AddDocumentType | null>(null);
+  const [draftIds, setDraftIds] = useState<Partial<Record<AddDocumentType, string>>>({});
 
   async function handleBookSubmit(payload: BookPayload) {
+    const key = payload.document_type === "magazine" ? "magazine" : "book";
+    const draftId = draftIds[key];
+    if (draftId) {
+      await updateBook(draftId, payload);
+      router.push(`/books/${draftId}/edit`);
+      return;
+    }
     const document = await createBook(payload);
     router.push(`/books/${document.id}/edit`);
   }
 
   async function handlePatternSubmit(payload: PatternPayload) {
+    if (draftIds.pattern) {
+      await updatePattern(draftIds.pattern, payload);
+      router.push(`/patterns/${draftIds.pattern}/edit`);
+      return;
+    }
     const pattern = await createPattern(payload);
     router.push(`/patterns/${pattern.id}/edit`);
+  }
+
+  async function handleBookAutoSave(payload: BookPayload) {
+    const key = payload.document_type === "magazine" ? "magazine" : "book";
+    const draftId = draftIds[key];
+    if (draftId) {
+      await updateBook(draftId, payload);
+      return;
+    }
+    const document = await createBook(payload);
+    setDraftIds((current) => ({ ...current, [key]: document.id }));
+  }
+
+  async function handlePatternAutoSave(payload: PatternPayload) {
+    const draftId = draftIds.pattern;
+    if (draftId) {
+      await updatePattern(draftId, payload);
+      return;
+    }
+    const pattern = await createPattern(payload);
+    setDraftIds((current) => ({ ...current, pattern: pattern.id }));
   }
 
   return (
@@ -96,15 +130,15 @@ export default function AddDocumentPage() {
         ) : null}
 
         {selectedType === "book" ? (
-          <BookForm key="book" documentType="book" submitLabel="Enregistrer le livre" onSubmit={handleBookSubmit} />
+          <BookForm key="book" documentType="book" submitLabel="Enregistrer le livre" onSubmit={handleBookSubmit} onAutoSave={handleBookAutoSave} />
         ) : null}
 
         {selectedType === "magazine" ? (
-          <BookForm key="magazine" documentType="magazine" submitLabel="Enregistrer le magazine" onSubmit={handleBookSubmit} />
+          <BookForm key="magazine" documentType="magazine" submitLabel="Enregistrer le magazine" onSubmit={handleBookSubmit} onAutoSave={handleBookAutoSave} />
         ) : null}
 
         {selectedType === "pattern" ? (
-          <PatternForm submitLabel="Enregistrer le patron" onSubmit={handlePatternSubmit} />
+          <PatternForm submitLabel="Enregistrer le patron" onSubmit={handlePatternSubmit} onAutoSave={handlePatternAutoSave} />
         ) : null}
       </div>
     </AppLayout>

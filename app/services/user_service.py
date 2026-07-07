@@ -1,11 +1,13 @@
+import uuid
+
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.exceptions import ConflictError
+from app.core.exceptions import ConflictError, ResourceNotFoundError
 from app.core.security import hash_password
 from app.models.user import User
 from app.repositories.user_repository import UserRepository
-from app.schemas.user import UserCreateByAdmin
+from app.schemas.user import AdminPasswordResetRequest, UserCreateByAdmin
 
 
 class UserService:
@@ -32,3 +34,14 @@ class UserService:
         except IntegrityError as exc:
             await self.session.rollback()
             raise ConflictError("Un compte existe deja avec cet email") from exc
+
+    async def reset_user_password(
+        self, user_id: uuid.UUID, payload: AdminPasswordResetRequest
+    ) -> User:
+        user = await self.repository.get(user_id)
+        if user is None:
+            raise ResourceNotFoundError("Compte introuvable")
+
+        updated = await self.repository.update_password(user, hash_password(payload.password))
+        await self.session.commit()
+        return updated

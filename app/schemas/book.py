@@ -94,6 +94,7 @@ class BookBase(BaseModel):
     page_count: int | None = Field(default=None, ge=1)
     language: str = Field(default="fr", min_length=2, max_length=12)
     cover_url: AnyHttpUrl | None = None
+    measurement_chart_url: AnyHttpUrl | None = None
     categories: list[str] = Field(default_factory=list)
     tags: list[str] = Field(default_factory=list)
     difficulty_levels: list[DifficultyLevel] = Field(default_factory=list)
@@ -181,6 +182,7 @@ class MagazinePatternCreate(BaseModel):
     description: str | None = Field(default=None, max_length=2000)
     cover_url: AnyHttpUrl | None = None
     second_cover_url: AnyHttpUrl | None = None
+    measurement_chart_url: AnyHttpUrl | None = None
     magazine_pattern_identifier: str | None = Field(default=None, max_length=80)
     difficulty_levels: list[DifficultyLevel] = Field(default_factory=list)
     target_audiences: list[TargetAudience] = Field(default_factory=list)
@@ -218,6 +220,7 @@ class BookUpdate(BaseModel):
     page_count: int | None = Field(default=None, ge=1)
     language: str | None = Field(default=None, min_length=2, max_length=12)
     cover_url: AnyHttpUrl | None = None
+    measurement_chart_url: AnyHttpUrl | None = None
     categories: list[str] | None = None
     tags: list[str] | None = None
     difficulty_levels: list[DifficultyLevel] | None = None
@@ -284,6 +287,7 @@ class BookPatternSummary(BaseModel):
     magazine_pattern_identifier: str | None = None
     cover_url: str | None = None
     second_cover_url: str | None = None
+    measurement_chart_url: str | None = None
     available_sizes: list[str] = Field(default_factory=list)
     available_size_ranges: list[str] = Field(default_factory=list)
 
@@ -301,6 +305,7 @@ class DocumentContributor(BaseModel):
 class BookRead(BookBase):
     id: uuid.UUID
     cover_url: str | None = None
+    measurement_chart_url: str | None = None
     pattern_sheet_url: str | None = None
     pattern_sheet_second_url: str | None = None
     patterns: list[BookPatternSummary] = Field(default_factory=list)

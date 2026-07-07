@@ -15,6 +15,43 @@ export async function uploadCover(file: File) {
   };
 }
 
+export async function prepareEditedImageForUpload(
+  file: File,
+  edits: { rotation: number; flipHorizontal: boolean; zoom: number },
+) {
+  if (typeof window === "undefined" || !file.type.startsWith("image/")) {
+    return file;
+  }
+
+  const image = await loadImage(file);
+  const normalizedRotation = ((edits.rotation % 360) + 360) % 360;
+  const quarterTurn = normalizedRotation === 90 || normalizedRotation === 270;
+  const sourceWidth = image.naturalWidth;
+  const sourceHeight = image.naturalHeight;
+  const outputWidth = quarterTurn ? sourceHeight : sourceWidth;
+  const outputHeight = quarterTurn ? sourceWidth : sourceHeight;
+
+  const canvas = document.createElement("canvas");
+  canvas.width = outputWidth;
+  canvas.height = outputHeight;
+
+  const context = canvas.getContext("2d");
+  if (!context) return file;
+
+  context.translate(outputWidth / 2, outputHeight / 2);
+  context.rotate((normalizedRotation * Math.PI) / 180);
+  context.scale(edits.flipHorizontal ? -edits.zoom : edits.zoom, edits.zoom);
+  context.drawImage(image, -sourceWidth / 2, -sourceHeight / 2, sourceWidth, sourceHeight);
+
+  const blob = await canvasToBlob(canvas, "image/webp", 0.86);
+  if (!blob) return file;
+
+  return new File([blob], replaceExtension(file.name, "webp"), {
+    type: "image/webp",
+    lastModified: Date.now(),
+  });
+}
+
 async function optimizeImageForUpload(file: File) {
   if (typeof window === "undefined" || !file.type.startsWith("image/")) {
     return file;

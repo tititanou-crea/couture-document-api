@@ -29,6 +29,13 @@ class Settings(BaseSettings):
     DEFAULT_ADMIN_PASSWORD: str = "Admin123!"
     DEFAULT_ADMIN_FIRST_NAME: str = "Tania"
     DEFAULT_ADMIN_LAST_NAME: str = "Rojas Angele"
+    FRONTEND_BASE_URL: str | None = None
+    PASSWORD_RESET_TOKEN_EXPIRE_MINUTES: int = 60
+    SMTP_HOST: str | None = None
+    SMTP_PORT: int = 587
+    SMTP_USERNAME: str | None = None
+    SMTP_PASSWORD: str | None = None
+    SMTP_FROM_EMAIL: str | None = None
     MEDIA_STORAGE_DIR: Path = Path("media/uploads")
     MEDIA_BASE_URL: str = "/media/uploads"
     MAX_UPLOAD_SIZE_MB: int = 5

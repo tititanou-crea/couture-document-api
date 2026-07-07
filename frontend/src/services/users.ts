@@ -18,3 +18,10 @@ export function updateUser(id: string, payload: VolunteerPayload) {
     body: JSON.stringify(payload),
   });
 }
+
+export function resetUserPassword(id: string, password: string) {
+  return apiRequest<Volunteer>(`/users/${id}/password`, {
+    method: "POST",
+    body: JSON.stringify({ password }),
+  });
+}

@@ -404,6 +404,13 @@ Variables principales :
 - `DEFAULT_ADMIN_PASSWORD`
 - `DEFAULT_ADMIN_FIRST_NAME`
 - `DEFAULT_ADMIN_LAST_NAME`
+- `FRONTEND_BASE_URL`
+- `PASSWORD_RESET_TOKEN_EXPIRE_MINUTES`
+- `SMTP_HOST`
+- `SMTP_PORT`
+- `SMTP_USERNAME`
+- `SMTP_PASSWORD`
+- `SMTP_FROM_EMAIL`
 - `MEDIA_STORAGE_DIR`
 - `MEDIA_BASE_URL`
 - `MAX_UPLOAD_SIZE_MB`
@@ -415,7 +422,7 @@ Extensions naturelles :
 
 - routes admin pour creer les utilisateurs
 - dependances FastAPI pour proteger les routes d'ecriture
-- forgot password
+- forgot password avec lien email si SMTP est configure
 - modele Magazine
 - modele PatternPdf
 - stockage S3 ou Cloudinary

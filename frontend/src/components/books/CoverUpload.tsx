@@ -1,9 +1,9 @@
-import type { ChangeEvent } from "react";
-import { Camera, ImagePlus, Trash2 } from "lucide-react";
+import { useEffect, useMemo, useState, type ChangeEvent } from "react";
+import { Camera, FlipHorizontal, ImagePlus, RotateCcw, RotateCw, Trash2, Upload } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { CoverImage } from "@/components/ui/CoverImage";
 import { Notice } from "@/components/ui/Notice";
-import { uploadCover } from "@/services/upload";
+import { prepareEditedImageForUpload, uploadCover } from "@/services/upload";
 import { useAsyncState } from "@/hooks/useAsyncState";
 
 type CoverUploadProps = {
@@ -13,10 +13,48 @@ type CoverUploadProps = {
 
 export function CoverUpload({ value, onChange }: CoverUploadProps) {
   const upload = useAsyncState<{ url: string }>();
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [rotation, setRotation] = useState(0);
+  const [flipHorizontal, setFlipHorizontal] = useState(false);
+  const [zoom, setZoom] = useState(1);
+
+  const previewStyle = useMemo(
+    () => ({
+      transform: `rotate(${rotation}deg) scaleX(${flipHorizontal ? -1 : 1}) scale(${zoom})`,
+    }),
+    [flipHorizontal, rotation, zoom],
+  );
+
+  useEffect(() => {
+    if (!pendingFile) {
+      setPreviewUrl(null);
+      return;
+    }
+    const url = URL.createObjectURL(pendingFile);
+    setPreviewUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [pendingFile]);
 
   async function handleFile(file?: File | null) {
     if (!file) return;
-    const result = await upload.run(() => uploadCover(file));
+    setPendingFile(file);
+    setRotation(0);
+    setFlipHorizontal(false);
+    setZoom(1);
+  }
+
+  async function uploadPendingFile() {
+    if (!pendingFile) return;
+    const result = await upload.run(async () => {
+      const editedFile = await prepareEditedImageForUpload(pendingFile, {
+        rotation,
+        flipHorizontal,
+        zoom,
+      });
+      return uploadCover(editedFile);
+    });
+    setPendingFile(null);
     onChange(result.url);
   }
 
@@ -29,7 +67,14 @@ export function CoverUpload({ value, onChange }: CoverUploadProps) {
   return (
     <div className="grid gap-5 md:grid-cols-[260px_1fr]">
       <div className="relative flex min-h-72 items-center justify-center overflow-hidden rounded-lg border border-dashed border-rosewood/30 bg-cream">
-        {value ? (
+        {previewUrl ? (
+          <img
+            src={previewUrl}
+            alt="Aperçu de la photo à envoyer"
+            className="max-h-full max-w-full object-contain transition-transform"
+            style={previewStyle}
+          />
+        ) : value ? (
           <CoverImage src={value} alt="Aperçu de la couverture" />
         ) : (
           <div className="px-6 text-center text-stone-600">
@@ -46,6 +91,42 @@ export function CoverUpload({ value, onChange }: CoverUploadProps) {
         </Notice>
 
         {upload.error ? <Notice type="error">{upload.error}</Notice> : null}
+
+        {pendingFile ? (
+          <div className="space-y-3 rounded-lg border border-rosewood/10 bg-white p-4">
+            <div className="flex flex-wrap gap-2">
+              <Button type="button" variant="secondary" icon={<RotateCcw aria-hidden size={18} />} onClick={() => setRotation((value) => value - 90)}>
+                Tourner à gauche
+              </Button>
+              <Button type="button" variant="secondary" icon={<RotateCw aria-hidden size={18} />} onClick={() => setRotation((value) => value + 90)}>
+                Tourner à droite
+              </Button>
+              <Button type="button" variant="secondary" icon={<FlipHorizontal aria-hidden size={18} />} onClick={() => setFlipHorizontal((value) => !value)}>
+                Retourner
+              </Button>
+            </div>
+            <label className="block">
+              <span className="label">Redimensionner</span>
+              <input
+                className="w-full accent-rosewood"
+                type="range"
+                min="0.6"
+                max="1.8"
+                step="0.05"
+                value={zoom}
+                onChange={(event) => setZoom(Number(event.target.value))}
+              />
+            </label>
+            <div className="flex flex-wrap gap-3">
+              <Button type="button" icon={<Upload aria-hidden size={18} />} onClick={uploadPendingFile} disabled={upload.loading}>
+                Envoyer cette photo
+              </Button>
+              <Button type="button" variant="quiet" onClick={() => setPendingFile(null)}>
+                Annuler
+              </Button>
+            </div>
+          </div>
+        ) : null}
 
         <div className="flex flex-wrap gap-3">
           <label className="inline-flex min-h-12 cursor-pointer items-center justify-center gap-2 rounded-lg bg-rosewood px-5 py-3 text-base font-semibold text-white transition hover:bg-[#7c424b] md:hidden">

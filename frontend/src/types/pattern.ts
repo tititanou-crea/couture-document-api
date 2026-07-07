@@ -18,6 +18,7 @@ export type Pattern = {
   description?: string | null;
   cover_url?: string | null;
   second_cover_url?: string | null;
+  measurement_chart_url?: string | null;
   magazine_pattern_identifier?: string | null;
   source_magazine_id?: string | null;
   source_magazine?: {
@@ -26,6 +27,7 @@ export type Pattern = {
     issue_number?: string | null;
     published_date?: string | null;
     cover_url?: string | null;
+    measurement_chart_url?: string | null;
   } | null;
   difficulty_levels: DifficultyLevel[];
   target_audiences: TargetAudience[];

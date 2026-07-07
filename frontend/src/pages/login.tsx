@@ -4,6 +4,7 @@ import { LogIn } from "lucide-react";
 import { AuthLayout } from "@/layouts/AuthLayout";
 import { Button } from "@/components/ui/Button";
 import { Notice } from "@/components/ui/Notice";
+import { PasswordField } from "@/components/ui/PasswordField";
 import { TextField } from "@/components/ui/TextField";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -50,7 +51,7 @@ export default function LoginPage() {
         {error ? <Notice type="error">{error}</Notice> : null}
         {loading ? <Notice>{getLoginStatus(elapsedSeconds)}</Notice> : null}
         <TextField label="Adresse email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} required placeholder="prenom@association.fr" autoComplete="email" />
-        <TextField label="Mot de passe" type="password" value={password} onChange={(event) => setPassword(event.target.value)} required placeholder="Votre mot de passe" autoComplete="current-password" />
+        <PasswordField label="Mot de passe" value={password} onChange={(event) => setPassword(event.target.value)} required placeholder="Votre mot de passe" autoComplete="current-password" />
         <Button type="submit" className="w-full" disabled={loading} icon={<LogIn aria-hidden size={20} />}>
           {loading ? "Connexion..." : "Se connecter"}
         </Button>

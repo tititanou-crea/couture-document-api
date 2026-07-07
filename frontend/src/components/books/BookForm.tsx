@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { PlusCircle, Save, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { CheckboxGroup } from "@/components/ui/CheckboxGroup";
@@ -36,6 +36,7 @@ type BookFormState = {
   description: string;
   notes: string;
   coverUrl: string | null;
+  measurementChartUrl: string | null;
   patternSheetUrl: string | null;
   patternSheetSecondUrl: string | null;
   difficulty_levels: BookPayload["difficulty_levels"];
@@ -45,6 +46,7 @@ type BookFormState = {
   techniques: BookPayload["techniques"];
   availableSizes: string;
   availableSizeRanges: string;
+  sizeEntries: string;
   includesPatterns: IncludesPatternsChoice;
   otherProject: string;
   otherTechnique: string;
@@ -59,12 +61,14 @@ type MagazinePatternFormState = {
   description: string;
   coverUrl: string | null;
   secondCoverUrl: string | null;
+  measurementChartUrl: string | null;
   difficulty_levels: BookPayload["difficulty_levels"];
   target_audiences: BookPayload["target_audiences"];
   main_categories: PatternMainCategory[];
   project_types: BookPayload["project_types"];
   availableSizes: string;
   availableSizeRanges: string;
+  sizeEntries: string;
 };
 
 type BookFormProps = {
@@ -72,6 +76,7 @@ type BookFormProps = {
   documentType?: BookPayload["document_type"];
   submitLabel: string;
   onSubmit: (payload: BookPayload) => Promise<void>;
+  onAutoSave?: (payload: BookPayload) => Promise<void>;
 };
 
 function initialState(book?: Book | null, documentType?: BookPayload["document_type"]): BookFormState {
@@ -89,6 +94,7 @@ function initialState(book?: Book | null, documentType?: BookPayload["document_t
     description: book?.description ?? "",
     notes: "",
     coverUrl: book?.cover_url ?? null,
+    measurementChartUrl: book?.measurement_chart_url ?? null,
     patternSheetUrl: book?.pattern_sheet_url ?? null,
     patternSheetSecondUrl: book?.pattern_sheet_second_url ?? null,
     difficulty_levels: book?.difficulty_levels ?? [],
@@ -98,6 +104,7 @@ function initialState(book?: Book | null, documentType?: BookPayload["document_t
     techniques: book?.techniques ?? [],
     availableSizes: book?.available_sizes.join(", ") ?? "",
     availableSizeRanges: book?.available_size_ranges.join(", ") ?? "",
+    sizeEntries: formatSizeEntries(book?.available_sizes, book?.available_size_ranges),
     includesPatterns:
       book?.includes_patterns === true ? "yes" : book?.includes_patterns === false ? "no" : "unknown",
     otherProject: "",
@@ -106,11 +113,14 @@ function initialState(book?: Book | null, documentType?: BookPayload["document_t
   };
 }
 
-export function BookForm({ initialBook, documentType, submitLabel, onSubmit }: BookFormProps) {
+export function BookForm({ initialBook, documentType, submitLabel, onSubmit, onAutoSave }: BookFormProps) {
   const [form, setForm] = useState<BookFormState>(() => initialState(initialBook, documentType));
   const [showNotes, setShowNotes] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [autoSaveStatus, setAutoSaveStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const lastAutoSavedPayload = useRef("");
+  const autoSaving = useRef(false);
 
   const isMagazine = form.documentType === "magazine";
   const filledMagazinePatterns = form.magazinePatterns.filter(
@@ -123,6 +133,29 @@ export function BookForm({ initialBook, documentType, submitLabel, onSubmit }: B
     !form.patternSheetSecondUrl &&
     filledMagazinePatterns.some((pattern) => !pattern.coverUrl);
   const canSave = form.title.trim().length > 0 && !missingRequiredPatternPhotos;
+
+  useEffect(() => {
+    if (!onAutoSave) return;
+    const interval = window.setInterval(() => {
+      if (!canSave || autoSaving.current) return;
+      const payload = buildPayload();
+      const serialized = JSON.stringify(payload);
+      if (serialized === lastAutoSavedPayload.current) return;
+
+      autoSaving.current = true;
+      onAutoSave(payload)
+        .then(() => {
+          lastAutoSavedPayload.current = serialized;
+          setAutoSaveStatus(`Brouillon sauvegardé automatiquement à ${new Date().toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}.`);
+        })
+        .catch(() => setAutoSaveStatus("La sauvegarde automatique n’a pas pu se faire."))
+        .finally(() => {
+          autoSaving.current = false;
+        });
+    }, 5 * 60 * 1000);
+
+    return () => window.clearInterval(interval);
+  });
 
   function update<K extends keyof BookFormState>(key: K, value: BookFormState[K]) {
     setForm((current) => ({ ...current, [key]: value }));
@@ -178,6 +211,7 @@ export function BookForm({ initialBook, documentType, submitLabel, onSubmit }: B
       page_count: form.pageCount ? Number(form.pageCount) : null,
       language: "fr",
       cover_url: form.coverUrl,
+      measurement_chart_url: form.measurementChartUrl,
       pattern_sheet_url: isMagazine ? form.patternSheetUrl : null,
       pattern_sheet_second_url: isMagazine ? form.patternSheetSecondUrl : null,
       description: isMagazine
@@ -192,8 +226,8 @@ export function BookForm({ initialBook, documentType, submitLabel, onSubmit }: B
       main_categories: form.main_categories,
       project_types: form.project_types,
       techniques: form.techniques,
-      available_sizes: parseCommaList(form.availableSizes),
-      available_size_ranges: parseCommaList(form.availableSizeRanges),
+      available_sizes: parseSizeEntries(form.sizeEntries).sizes,
+      available_size_ranges: parseSizeEntries(form.sizeEntries).ranges,
       includes_patterns:
         form.includesPatterns === "unknown" ? null : form.includesPatterns === "yes",
       magazine_patterns:
@@ -208,13 +242,14 @@ export function BookForm({ initialBook, documentType, submitLabel, onSubmit }: B
                 cover_url:
                   pattern.coverUrl || form.patternSheetUrl || form.patternSheetSecondUrl,
                 second_cover_url: pattern.secondCoverUrl,
+                measurement_chart_url: pattern.measurementChartUrl || form.measurementChartUrl,
                 magazine_pattern_identifier: pattern.identifier.trim() || null,
                 difficulty_levels: pattern.difficulty_levels,
                 target_audiences: pattern.target_audiences,
                 main_categories: pattern.main_categories,
                 project_types: pattern.project_types,
-                available_sizes: parseCommaList(pattern.availableSizes),
-                available_size_ranges: parseCommaList(pattern.availableSizeRanges),
+                available_sizes: parseSizeEntries(pattern.sizeEntries).sizes,
+                available_size_ranges: parseSizeEntries(pattern.sizeEntries).ranges,
               }))
           : [],
       status: "draft",
@@ -237,6 +272,7 @@ export function BookForm({ initialBook, documentType, submitLabel, onSubmit }: B
           description: "",
           coverUrl: null,
           secondCoverUrl: null,
+          measurementChartUrl: current.measurementChartUrl,
           difficulty_levels: current.difficulty_levels,
           target_audiences: current.target_audiences,
           main_categories: current.main_categories.filter((value): value is PatternMainCategory =>
@@ -245,6 +281,7 @@ export function BookForm({ initialBook, documentType, submitLabel, onSubmit }: B
           project_types: current.project_types,
           availableSizes: current.availableSizes,
           availableSizeRanges: current.availableSizeRanges,
+          sizeEntries: current.sizeEntries,
         },
       ],
     }));
@@ -286,6 +323,8 @@ export function BookForm({ initialBook, documentType, submitLabel, onSubmit }: B
   return (
     <form className="space-y-6" onSubmit={handleSubmit}>
       {error ? <Notice type="error">{error}</Notice> : null}
+
+      {autoSaveStatus ? <Notice>{autoSaveStatus}</Notice> : null}
 
       <SectionCard
         title={isMagazine ? "Assistant couverture" : "Assistant photo"}
@@ -375,10 +414,13 @@ export function BookForm({ initialBook, documentType, submitLabel, onSubmit }: B
             </label>
           </div>
           <div className="lg:col-span-6">
-            <TextField label="Tailles disponibles" value={form.availableSizes} onChange={(event) => update("availableSizes", event.target.value)} placeholder="Ex. 34, 36, 38, 40 ou S, M, L" help="Facultatif. Séparez les tailles par une virgule." />
-          </div>
-          <div className="lg:col-span-6">
-            <TextField label="Intervalles de tailles" value={form.availableSizeRanges} onChange={(event) => update("availableSizeRanges", event.target.value)} placeholder="Ex. 34-46, XS-XL, 2-10 ans" help="Facultatif. Séparez les intervalles par une virgule." />
+            <TextField
+              label="Tailles ou intervalles"
+              value={form.sizeEntries}
+              onChange={(event) => update("sizeEntries", event.target.value)}
+              placeholder="Ex. 34, 36, 38, 40, S, M, L, 34-46, XS-XL, 2-10 ans"
+              help="Séparez chaque élément par une virgule. Tailles seules : 34, 36, S, M. Intervalles : 34-46, XS-XL, 2-10 ans."
+            />
           </div>
         </div>
       </SectionCard>
@@ -401,8 +443,12 @@ export function BookForm({ initialBook, documentType, submitLabel, onSubmit }: B
         <CoverUpload value={form.coverUrl} onChange={(url) => update("coverUrl", url)} />
       </SectionCard>
 
+      <SectionCard title={isMagazine ? "4. Tableau des mensurations" : "5. Tableau des mensurations"} description="Ajoutez la photo du tableau des tailles ou mensurations si le document en contient un.">
+        <CoverUpload value={form.measurementChartUrl} onChange={(url) => update("measurementChartUrl", url)} />
+      </SectionCard>
+
       {isMagazine && form.includesPatterns === "yes" ? (
-        <SectionCard title="4. Patrons du magazine" description="Ajoutez une planche globale si le magazine en propose une, puis créez les patrons du numéro depuis cette même page.">
+        <SectionCard title="5. Patrons du magazine" description="Ajoutez une planche globale si le magazine en propose une, puis créez les patrons du numéro depuis cette même page.">
           <div className="space-y-5">
             <div>
               <p className="label">Photos de la planche des modèles (facultatif)</p>
@@ -456,8 +502,13 @@ export function BookForm({ initialBook, documentType, submitLabel, onSubmit }: B
                   <div className="grid gap-4 md:grid-cols-3">
                     <TextField label="Nom descriptif" value={pattern.modelName} onChange={(event) => updateMagazinePattern(pattern.id, "modelName", event.target.value)} placeholder="Ex. Jupe en jean" />
                     <TextField label="Repère sur la planche" value={pattern.identifier} onChange={(event) => updateMagazinePattern(pattern.id, "identifier", event.target.value)} placeholder="Ex. M1, 12A, modèle 104" />
-                    <TextField label="Tailles disponibles" value={pattern.availableSizes} onChange={(event) => updateMagazinePattern(pattern.id, "availableSizes", event.target.value)} placeholder="Ex. 36, 38, 40 ou S, M, L" help="Facultatif. Séparez les tailles par une virgule." />
-                    <TextField label="Intervalles de tailles" value={pattern.availableSizeRanges} onChange={(event) => updateMagazinePattern(pattern.id, "availableSizeRanges", event.target.value)} placeholder="Ex. 34-46, XS-XL, 2-10 ans" help="Facultatif. Séparez les intervalles par une virgule." />
+                    <TextField
+                      label="Tailles ou intervalles"
+                      value={pattern.sizeEntries}
+                      onChange={(event) => updateMagazinePattern(pattern.id, "sizeEntries", event.target.value)}
+                      placeholder="Ex. 36, 38, 40, 34-46, XS-XL"
+                      help="Tailles seules et intervalles dans le même champ, séparés par des virgules."
+                    />
                     <label>
                       <span className="label">Format</span>
                       <select className="field" value={pattern.format} onChange={(event) => updateMagazinePattern(pattern.id, "format", event.target.value as MagazinePatternFormState["format"])}>
@@ -508,6 +559,15 @@ export function BookForm({ initialBook, documentType, submitLabel, onSubmit }: B
                         }
                       />
                     </div>
+                    <div className="xl:col-span-2">
+                      <p className="label">Tableau des mensurations (facultatif)</p>
+                      <CoverUpload
+                        value={pattern.measurementChartUrl}
+                        onChange={(url) =>
+                          updateMagazinePattern(pattern.id, "measurementChartUrl", url)
+                        }
+                      />
+                    </div>
                   </div>
                   <p className="mt-2 text-sm text-stone-500">
                     {form.patternSheetUrl || form.patternSheetSecondUrl
@@ -521,6 +581,11 @@ export function BookForm({ initialBook, documentType, submitLabel, onSubmit }: B
                 <Notice type="error">
                   Sans planche globale, chaque patron renseigné doit avoir sa propre photo.
                 </Notice>
+              ) : null}
+              {form.magazinePatterns.length > 0 ? (
+                <Button type="button" variant="secondary" icon={<PlusCircle aria-hidden size={20} />} onClick={addMagazinePattern}>
+                  Ajouter un patron
+                </Button>
               ) : null}
             </div>
           </div>
@@ -548,4 +613,21 @@ function parseCommaList(value: string) {
         .filter(Boolean)
     )
   );
+}
+
+function parseSizeEntries(value: string) {
+  const entries = parseCommaList(value);
+  return {
+    sizes: entries.filter((entry) => !isSizeRange(entry)),
+    ranges: entries.filter(isSizeRange),
+  };
+}
+
+function isSizeRange(value: string) {
+  const normalized = value.trim().toLowerCase();
+  return /\S\s*[-–—]\s*\S/.test(normalized) || /\b(?:a|à|au|aux|jusqu)/.test(normalized);
+}
+
+function formatSizeEntries(sizes: string[] = [], ranges: string[] = []) {
+  return [...sizes, ...ranges].join(", ");
 }

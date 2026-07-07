@@ -52,6 +52,7 @@ export type Book = {
   page_count?: number | null;
   language: string;
   cover_url?: string | null;
+  measurement_chart_url?: string | null;
   pattern_sheet_url?: string | null;
   pattern_sheet_second_url?: string | null;
   categories: string[];
@@ -71,6 +72,7 @@ export type Book = {
     magazine_pattern_identifier?: string | null;
     cover_url?: string | null;
     second_cover_url?: string | null;
+    measurement_chart_url?: string | null;
     available_sizes: string[];
     available_size_ranges: string[];
   }[];
@@ -93,6 +95,7 @@ export type BookPayload = Omit<
     description?: string | null;
     cover_url?: string | null;
     second_cover_url?: string | null;
+    measurement_chart_url?: string | null;
     magazine_pattern_identifier?: string | null;
     difficulty_levels: DifficultyLevel[];
     target_audiences: TargetAudience[];

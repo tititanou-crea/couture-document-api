@@ -21,6 +21,7 @@ class PatternBase(BaseModel):
     description: str | None = Field(default=None, max_length=2000)
     cover_url: AnyHttpUrl | None = None
     second_cover_url: AnyHttpUrl | None = None
+    measurement_chart_url: AnyHttpUrl | None = None
     magazine_pattern_identifier: str | None = Field(default=None, max_length=80)
     source_magazine_id: uuid.UUID | None = None
     difficulty_levels: list[DifficultyLevel] = Field(default_factory=list)
@@ -82,6 +83,7 @@ class PatternUpdate(BaseModel):
     description: str | None = Field(default=None, max_length=2000)
     cover_url: AnyHttpUrl | None = None
     second_cover_url: AnyHttpUrl | None = None
+    measurement_chart_url: AnyHttpUrl | None = None
     magazine_pattern_identifier: str | None = Field(default=None, max_length=80)
     source_magazine_id: uuid.UUID | None = None
     difficulty_levels: list[DifficultyLevel] | None = None
@@ -119,6 +121,7 @@ class PatternMagazineSummary(BaseModel):
     issue_number: str | None = None
     published_date: date | None = None
     cover_url: str | None = None
+    measurement_chart_url: str | None = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -127,6 +130,7 @@ class PatternRead(PatternBase):
     id: uuid.UUID
     cover_url: str | None = None
     second_cover_url: str | None = None
+    measurement_chart_url: str | None = None
     source_magazine: PatternMagazineSummary | None = None
     creator: DocumentContributor | None = None
     last_modifier: DocumentContributor | None = None
@@ -147,7 +151,7 @@ def pattern_values_for_model(
     payload: PatternCreate | PatternUpdate, *, exclude_unset: bool = False
 ) -> dict[str, object]:
     values = payload.model_dump(exclude_unset=exclude_unset)
-    for url_field in ("cover_url", "second_cover_url"):
+    for url_field in ("cover_url", "second_cover_url", "measurement_chart_url"):
         if values.get(url_field) is not None:
             values[url_field] = str(values[url_field])
     if values.get("status") == DocumentStatus.VALIDATED and values.get("validated_at") is None:

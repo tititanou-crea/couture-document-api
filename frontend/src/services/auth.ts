@@ -31,6 +31,24 @@ export async function forgotPassword(email: string) {
   });
 }
 
+export async function resetPassword(token: string, password: string) {
+  return apiRequest<{ message?: string }>("/auth/reset-password", {
+    method: "POST",
+    body: JSON.stringify({ token, password }),
+    auth: false,
+  });
+}
+
+export async function changePassword(currentPassword: string, newPassword: string) {
+  return apiRequest<{ message?: string }>("/auth/change-password", {
+    method: "POST",
+    body: JSON.stringify({
+      current_password: currentPassword,
+      new_password: newPassword,
+    }),
+  });
+}
+
 export function logout() {
   clearToken();
 }

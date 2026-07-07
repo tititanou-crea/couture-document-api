@@ -27,7 +27,14 @@ export default function EditPatternPage() {
     <AppLayout title="Modifier un patron" subtitle="Mettez à jour uniquement les informations utiles.">
       {pattern.error ? <Notice type="error">{pattern.error}</Notice> : null}
       {pattern.loading ? <p className="text-lg font-semibold text-rosewood">Chargement du patron...</p> : null}
-      {pattern.data ? <PatternForm initialPattern={pattern.data} submitLabel="Enregistrer les modifications" onSubmit={handleSubmit} /> : null}
+      {pattern.data ? (
+        <PatternForm
+          initialPattern={pattern.data}
+          submitLabel="Enregistrer les modifications"
+          onSubmit={handleSubmit}
+          onAutoSave={(payload) => updatePattern(id, payload).then(() => undefined)}
+        />
+      ) : null}
     </AppLayout>
   );
 }

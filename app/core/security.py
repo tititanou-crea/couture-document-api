@@ -43,6 +43,19 @@ def create_access_token(subject: uuid.UUID, extra_claims: dict[str, Any] | None 
     return _encode_jwt(payload)
 
 
+def create_password_reset_token(subject: uuid.UUID) -> str:
+    now = datetime.now(UTC)
+    payload = {
+        "sub": str(subject),
+        "typ": "password_reset",
+        "iat": int(now.timestamp()),
+        "exp": int(
+            (now + timedelta(minutes=settings.PASSWORD_RESET_TOKEN_EXPIRE_MINUTES)).timestamp()
+        ),
+    }
+    return _encode_jwt(payload)
+
+
 def _encode_jwt(payload: dict[str, Any]) -> str:
     header = {"alg": "HS256", "typ": "JWT"}
     header_segment = _base64url_encode(json.dumps(header, separators=(",", ":")).encode())

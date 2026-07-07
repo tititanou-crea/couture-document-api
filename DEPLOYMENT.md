@@ -34,12 +34,19 @@ DEFAULT_ADMIN_EMAIL=votre-email
 DEFAULT_ADMIN_PASSWORD=un-mot-de-passe-fort
 DEFAULT_ADMIN_FIRST_NAME=Votre prenom
 DEFAULT_ADMIN_LAST_NAME=Votre nom
+FRONTEND_BASE_URL=https://votre-frontend.vercel.app
+SMTP_HOST=smtp.votre-fournisseur.fr
+SMTP_PORT=587
+SMTP_USERNAME=votre-utilisateur-smtp
+SMTP_PASSWORD=votre-mot-de-passe-smtp
+SMTP_FROM_EMAIL=contact@votre-domaine.fr
 ```
 
 Notes :
 
 - Cette configuration Render utilise le plan gratuit. L'API peut se mettre en veille apres une periode d'inactivite.
 - Pour eviter une connexion tres lente au premier acces, passer le service API sur un plan Render qui ne dort pas, ou configurer un moniteur externe qui appelle regulierement `/health`.
+- Le bouton "mot de passe oublie" envoie un lien uniquement si `FRONTEND_BASE_URL`, `SMTP_HOST` et `SMTP_FROM_EMAIL` sont configures. Sans SMTP, l'administratrice peut toujours definir un nouveau mot de passe provisoire depuis la page des benevoles.
 - Si le login affiche une erreur CORS, verifier que `BACKEND_CORS_ORIGIN_REGEX` autorise bien l'URL Vercel affichee dans la console du navigateur.
 - Les uploads sont stockes localement sur Render Free et ne sont pas durables. Pour conserver les images, utiliser ensuite Cloudinary, Supabase Storage ou S3.
 - `SECRET_KEY` est genere automatiquement par Render.
