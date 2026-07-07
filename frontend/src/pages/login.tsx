@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { useRouter } from "next/router";
 import { useEffect, useState, type FormEvent } from "react";
 import { LogIn } from "lucide-react";
@@ -52,6 +53,9 @@ export default function LoginPage() {
         {loading ? <Notice>{getLoginStatus(elapsedSeconds)}</Notice> : null}
         <TextField label="Adresse email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} required placeholder="prenom@association.fr" autoComplete="email" />
         <PasswordField label="Mot de passe" value={password} onChange={(event) => setPassword(event.target.value)} required placeholder="Votre mot de passe" autoComplete="current-password" />
+        <Link href="/forgot-password" className="block text-right text-sm font-semibold text-rosewood underline-offset-4 hover:underline">
+          Mot de passe oublié ?
+        </Link>
         <Button type="submit" className="w-full" disabled={loading} icon={<LogIn aria-hidden size={20} />}>
           {loading ? "Connexion..." : "Se connecter"}
         </Button>
