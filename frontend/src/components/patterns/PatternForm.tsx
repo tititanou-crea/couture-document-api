@@ -7,16 +7,12 @@ import { SectionCard } from "@/components/ui/SectionCard";
 import { TextArea } from "@/components/ui/TextArea";
 import { TextField } from "@/components/ui/TextField";
 import { CoverUpload } from "@/components/books/CoverUpload";
-import { PatternPhotoAssistant } from "@/components/patterns/PatternPhotoAssistant";
-import type { ExtractedPatternMetadata } from "@/services/metadata";
 import { audienceOptions, difficultyOptions, projectOptions } from "@/utils/bookOptions";
 import type {
   Pattern,
   PatternFormat,
-  PatternMainCategory,
   PatternPayload,
 } from "@/types/pattern";
-import type { DifficultyLevel, ProjectType, TargetAudience } from "@/types/book";
 
 const patternCategoryOptions: {
   label: string;
@@ -150,48 +146,6 @@ export function PatternForm({ initialPattern, submitLabel, onSubmit, onAutoSave 
     };
   }
 
-  function applyExtractedMetadata(metadata: ExtractedPatternMetadata) {
-    setForm((current) => ({
-      ...current,
-      modelName: current.modelName || metadata.modelName || "",
-      designerName: isMagazinePattern
-        ? sourceMagazineName
-        : current.designerName || metadata.designerName || "",
-      format: current.format || metadata.format || "",
-      description: current.description || metadata.description || "",
-      coverUrl: current.coverUrl || metadata.coverUrl || null,
-      difficulty_levels: current.difficulty_levels.length
-        ? current.difficulty_levels
-        : filterValues<DifficultyLevel>(metadata.difficultyLevels, ["beginner", "intermediate", "advanced"]),
-      target_audiences: current.target_audiences.length
-        ? current.target_audiences
-        : filterValues<TargetAudience>(metadata.targetAudiences, ["women", "men", "children", "baby", "plus_size"]),
-      main_categories: current.main_categories.length
-        ? current.main_categories
-        : filterValues<PatternMainCategory>(metadata.mainCategories, ["clothing", "accessories"]),
-      project_types: current.project_types.length
-        ? current.project_types
-        : filterValues<ProjectType>(metadata.projectTypes, [
-            "dress",
-            "skirt",
-            "top",
-            "pants",
-            "jacket",
-            "coat",
-            "bag",
-            "pouch",
-            "hair_accessories",
-            "textile_decoration",
-          ]),
-      availableSizes:
-        current.availableSizes || metadata.availableSizes?.join(", ") || "",
-      availableSizeRanges:
-        current.availableSizeRanges || metadata.availableSizeRanges?.join(", ") || "",
-      sizeEntries:
-        current.sizeEntries || formatSizeEntries(metadata.availableSizes, metadata.availableSizeRanges),
-    }));
-  }
-
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
     setSaving(true);
@@ -209,13 +163,6 @@ export function PatternForm({ initialPattern, submitLabel, onSubmit, onAutoSave 
     <form className="space-y-6" onSubmit={handleSubmit}>
       {error ? <Notice type="error">{error}</Notice> : null}
       {autoSaveStatus ? <Notice>{autoSaveStatus}</Notice> : null}
-
-      <SectionCard
-        title="Assistant photo"
-        description="Ajoutez une photo du patron pour préremplir automatiquement les informations visibles."
-      >
-        <PatternPhotoAssistant onApply={applyExtractedMetadata} />
-      </SectionCard>
 
       <SectionCard
         title="1. Informations principales"
@@ -310,11 +257,6 @@ export function PatternForm({ initialPattern, submitLabel, onSubmit, onAutoSave 
       </div>
     </form>
   );
-}
-
-function filterValues<T extends string>(values: string[] | undefined, allowed: T[]) {
-  if (!values) return [];
-  return values.filter((value): value is T => allowed.includes(value as T));
 }
 
 function parseCommaList(value: string) {

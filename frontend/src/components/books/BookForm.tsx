@@ -7,9 +7,7 @@ import { RadioCards } from "@/components/ui/RadioCards";
 import { SectionCard } from "@/components/ui/SectionCard";
 import { TextArea } from "@/components/ui/TextArea";
 import { TextField } from "@/components/ui/TextField";
-import { BookPhotoAssistant } from "@/components/books/BookPhotoAssistant";
 import { CoverUpload } from "@/components/books/CoverUpload";
-import type { ExtractedBookMetadata } from "@/services/metadata";
 import {
   audienceOptions,
   categoryOptions,
@@ -171,21 +169,6 @@ export function BookForm({ initialBook, documentType, submitLabel, onSubmit, onA
     }));
   }
 
-  function applyExtractedMetadata(metadata: ExtractedBookMetadata) {
-    setForm((current) => ({
-      ...current,
-      title: current.title || metadata.title || "",
-      subtitle: isMagazine ? "" : current.subtitle || metadata.subtitle || "",
-      authors: current.authors || metadata.authors?.join(", ") || "",
-      publisher: isMagazine ? "" : current.publisher || metadata.publisher || "",
-      isbn: current.isbn || metadata.isbn || "",
-      publicationYear: current.publicationYear || metadata.publishedYear || "",
-      pageCount: current.pageCount || (metadata.pageCount ? String(metadata.pageCount) : ""),
-      description: isMagazine ? "" : current.description || metadata.description || "",
-      coverUrl: current.coverUrl || metadata.coverUrl || null,
-    }));
-  }
-
   function buildPayload(): BookPayload {
     const notes = form.notes.trim() ? `\n\nNotes complémentaires :\n${form.notes.trim()}` : "";
     const tags = [
@@ -325,17 +308,6 @@ export function BookForm({ initialBook, documentType, submitLabel, onSubmit, onA
       {error ? <Notice type="error">{error}</Notice> : null}
 
       {autoSaveStatus ? <Notice>{autoSaveStatus}</Notice> : null}
-
-      <SectionCard
-        title={isMagazine ? "Assistant couverture" : "Assistant photo"}
-        description={
-          isMagazine
-            ? "Ajoutez la couverture avant du magazine pour préremplir les informations visibles."
-            : "Prenez la couverture et le dos du livre pour préremplir automatiquement les informations disponibles."
-        }
-      >
-        <BookPhotoAssistant mode={isMagazine ? "magazine" : "book"} onApply={applyExtractedMetadata} />
-      </SectionCard>
 
       <SectionCard
         title={isMagazine ? "1. Identifier le numéro" : "1. Informations principales"}
