@@ -87,7 +87,7 @@ export default function VolunteersPage() {
                     required
                   />
                   <Button className="self-end" type="submit" variant="secondary" icon={<KeyRound aria-hidden size={18} />}>
-                    Réinitialiser
+                    Définir le mdp provisoire
                   </Button>
                 </form>
               </div>
