@@ -17,7 +17,13 @@ export async function uploadCover(file: File) {
 
 export async function prepareEditedImageForUpload(
   file: File,
-  edits: { rotation: number; flipHorizontal: boolean; zoom: number },
+  edits: {
+    rotation: number;
+    flipHorizontal: boolean;
+    cropZoom: number;
+    cropX: number;
+    cropY: number;
+  },
 ) {
   if (typeof window === "undefined" || !file.type.startsWith("image/")) {
     return file;
@@ -40,16 +46,47 @@ export async function prepareEditedImageForUpload(
 
   context.translate(outputWidth / 2, outputHeight / 2);
   context.rotate((normalizedRotation * Math.PI) / 180);
-  context.scale(edits.flipHorizontal ? -edits.zoom : edits.zoom, edits.zoom);
+  context.scale(edits.flipHorizontal ? -1 : 1, 1);
   context.drawImage(image, -sourceWidth / 2, -sourceHeight / 2, sourceWidth, sourceHeight);
 
-  const blob = await canvasToBlob(canvas, "image/webp", 0.86);
+  const cropZoom = Math.max(1, edits.cropZoom);
+  const cropWidth = Math.max(1, Math.round(outputWidth / cropZoom));
+  const cropHeight = Math.max(1, Math.round(outputHeight / cropZoom));
+  const maxCropX = outputWidth - cropWidth;
+  const maxCropY = outputHeight - cropHeight;
+  const sourceX = Math.round((maxCropX / 2) + (edits.cropX * maxCropX) / 2);
+  const sourceY = Math.round((maxCropY / 2) + (edits.cropY * maxCropY) / 2);
+
+  const croppedCanvas = document.createElement("canvas");
+  croppedCanvas.width = cropWidth;
+  croppedCanvas.height = cropHeight;
+
+  const croppedContext = croppedCanvas.getContext("2d");
+  if (!croppedContext) return file;
+
+  croppedContext.drawImage(
+    canvas,
+    clamp(sourceX, 0, maxCropX),
+    clamp(sourceY, 0, maxCropY),
+    cropWidth,
+    cropHeight,
+    0,
+    0,
+    cropWidth,
+    cropHeight,
+  );
+
+  const blob = await canvasToBlob(croppedCanvas, "image/webp", 0.86);
   if (!blob) return file;
 
   return new File([blob], replaceExtension(file.name, "webp"), {
     type: "image/webp",
     lastModified: Date.now(),
   });
+}
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, value));
 }
 
 async function optimizeImageForUpload(file: File) {

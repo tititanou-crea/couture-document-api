@@ -1,5 +1,13 @@
 import { useEffect, useMemo, useState, type ChangeEvent } from "react";
-import { Camera, FlipHorizontal, ImagePlus, RotateCcw, RotateCw, Trash2, Upload } from "lucide-react";
+import {
+  Camera,
+  FlipHorizontal,
+  ImagePlus,
+  RotateCcw,
+  RotateCw,
+  Trash2,
+  Upload,
+} from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { CoverImage } from "@/components/ui/CoverImage";
 import { Notice } from "@/components/ui/Notice";
@@ -17,13 +25,17 @@ export function CoverUpload({ value, onChange }: CoverUploadProps) {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [rotation, setRotation] = useState(0);
   const [flipHorizontal, setFlipHorizontal] = useState(false);
-  const [zoom, setZoom] = useState(1);
+  const [cropZoom, setCropZoom] = useState(1);
+  const [cropX, setCropX] = useState(0);
+  const [cropY, setCropY] = useState(0);
 
   const previewStyle = useMemo(
     () => ({
-      transform: `rotate(${rotation}deg) scaleX(${flipHorizontal ? -1 : 1}) scale(${zoom})`,
+      transform: `translate(${cropX * -35}%, ${cropY * -35}%) rotate(${rotation}deg) scaleX(${
+        flipHorizontal ? -1 : 1
+      }) scale(${cropZoom})`,
     }),
-    [flipHorizontal, rotation, zoom],
+    [cropX, cropY, cropZoom, flipHorizontal, rotation],
   );
 
   useEffect(() => {
@@ -41,7 +53,9 @@ export function CoverUpload({ value, onChange }: CoverUploadProps) {
     setPendingFile(file);
     setRotation(0);
     setFlipHorizontal(false);
-    setZoom(1);
+    setCropZoom(1);
+    setCropX(0);
+    setCropY(0);
   }
 
   async function uploadPendingFile() {
@@ -50,7 +64,9 @@ export function CoverUpload({ value, onChange }: CoverUploadProps) {
       const editedFile = await prepareEditedImageForUpload(pendingFile, {
         rotation,
         flipHorizontal,
-        zoom,
+        cropZoom,
+        cropX,
+        cropY,
       });
       return uploadCover(editedFile);
     });
@@ -106,15 +122,42 @@ export function CoverUpload({ value, onChange }: CoverUploadProps) {
               </Button>
             </div>
             <label className="block">
-              <span className="label">Redimensionner</span>
+              <span className="label">Recadrer</span>
               <input
                 className="w-full accent-rosewood"
                 type="range"
-                min="0.6"
-                max="1.8"
+                min="1"
+                max="3"
                 step="0.05"
-                value={zoom}
-                onChange={(event) => setZoom(Number(event.target.value))}
+                value={cropZoom}
+                onChange={(event) => setCropZoom(Number(event.target.value))}
+              />
+              <span className="help-text">Augmentez pour couper les bords de la photo.</span>
+            </label>
+            <label className="block">
+              <span className="label">Décaler à gauche / droite</span>
+              <input
+                className="w-full accent-rosewood"
+                type="range"
+                min="-1"
+                max="1"
+                step="0.02"
+                value={cropX}
+                onChange={(event) => setCropX(Number(event.target.value))}
+                disabled={cropZoom === 1}
+              />
+            </label>
+            <label className="block">
+              <span className="label">Décaler en haut / bas</span>
+              <input
+                className="w-full accent-rosewood"
+                type="range"
+                min="-1"
+                max="1"
+                step="0.02"
+                value={cropY}
+                onChange={(event) => setCropY(Number(event.target.value))}
+                disabled={cropZoom === 1}
               />
             </label>
             <div className="flex flex-wrap gap-3">
