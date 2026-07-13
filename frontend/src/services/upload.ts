@@ -11,8 +11,24 @@ export async function uploadCover(file: File) {
     },
   });
   return {
-    url: response.url.startsWith("http") ? response.url : `${API_ORIGIN}${response.url}`,
+    url: resolveUploadedUrl(response.url),
   };
+}
+
+function resolveUploadedUrl(url: string) {
+  if (/^https?:\/\//.test(url)) {
+    return url;
+  }
+
+  if (API_ORIGIN) {
+    return new URL(url, `${API_ORIGIN}/`).toString();
+  }
+
+  if (typeof window !== "undefined") {
+    return new URL(url, window.location.origin).toString();
+  }
+
+  return url;
 }
 
 export async function prepareEditedImageForUpload(
