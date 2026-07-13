@@ -4,7 +4,6 @@ from datetime import date, datetime
 
 from pydantic import (
     AliasChoices,
-    AnyHttpUrl,
     BaseModel,
     ConfigDict,
     Field,
@@ -22,6 +21,7 @@ from app.core.enums import (
     TargetAudience,
     Technique,
 )
+from app.schemas.media_url import normalize_media_url
 
 ISBN_PATTERN = re.compile(r"^(?:97[89][-\s]?)?\d[-\s]?\d{2,5}[-\s]?\d{2,7}[-\s]?[\dX]$", re.I)
 EAN_PATTERN = re.compile(r"^[0-9][0-9\-\s]{6,16}[0-9]$")
@@ -93,8 +93,8 @@ class BookBase(BaseModel):
     published_date: date | None = None
     page_count: int | None = Field(default=None, ge=1)
     language: str = Field(default="fr", min_length=2, max_length=12)
-    cover_url: AnyHttpUrl | None = None
-    measurement_chart_url: AnyHttpUrl | None = None
+    cover_url: str | None = None
+    measurement_chart_url: str | None = None
     categories: list[str] = Field(default_factory=list)
     tags: list[str] = Field(default_factory=list)
     difficulty_levels: list[DifficultyLevel] = Field(default_factory=list)
@@ -105,8 +105,8 @@ class BookBase(BaseModel):
     available_sizes: list[str] = Field(default_factory=list)
     available_size_ranges: list[str] = Field(default_factory=list)
     includes_patterns: bool | None = None
-    pattern_sheet_url: AnyHttpUrl | None = None
-    pattern_sheet_second_url: AnyHttpUrl | None = None
+    pattern_sheet_url: str | None = None
+    pattern_sheet_second_url: str | None = None
     status: DocumentStatus = DocumentStatus.DRAFT
     created_by: uuid.UUID | None = None
     validated_by: uuid.UUID | None = None
@@ -136,6 +136,17 @@ class BookBase(BaseModel):
         if not EAN_PATTERN.match(value) or not is_valid_ean(value):
             raise ValueError("EAN invalide")
         return normalize_ean(value)
+
+    @field_validator(
+        "cover_url",
+        "measurement_chart_url",
+        "pattern_sheet_url",
+        "pattern_sheet_second_url",
+        mode="before",
+    )
+    @classmethod
+    def normalize_media_urls(cls, value: object) -> str | None:
+        return normalize_media_url(value)
 
     @field_validator(
         "authors",
@@ -180,9 +191,9 @@ class MagazinePatternCreate(BaseModel):
     designer_name: str | None = Field(default=None, min_length=1, max_length=180)
     format: PatternFormat | None = PatternFormat.PHYSICAL
     description: str | None = Field(default=None, max_length=2000)
-    cover_url: AnyHttpUrl | None = None
-    second_cover_url: AnyHttpUrl | None = None
-    measurement_chart_url: AnyHttpUrl | None = None
+    cover_url: str | None = None
+    second_cover_url: str | None = None
+    measurement_chart_url: str | None = None
     magazine_pattern_identifier: str | None = Field(default=None, max_length=80)
     difficulty_levels: list[DifficultyLevel] = Field(default_factory=list)
     target_audiences: list[TargetAudience] = Field(default_factory=list)
@@ -197,6 +208,16 @@ class MagazinePatternCreate(BaseModel):
         if MainCategory.TECHNIQUE in values:
             raise ValueError("La categorie technique n'est pas disponible pour les patrons")
         return values
+
+    @field_validator(
+        "cover_url",
+        "second_cover_url",
+        "measurement_chart_url",
+        mode="before",
+    )
+    @classmethod
+    def normalize_media_urls(cls, value: object) -> str | None:
+        return normalize_media_url(value)
 
 
 class BookCreate(BookBase):
@@ -219,8 +240,8 @@ class BookUpdate(BaseModel):
     published_date: date | None = None
     page_count: int | None = Field(default=None, ge=1)
     language: str | None = Field(default=None, min_length=2, max_length=12)
-    cover_url: AnyHttpUrl | None = None
-    measurement_chart_url: AnyHttpUrl | None = None
+    cover_url: str | None = None
+    measurement_chart_url: str | None = None
     categories: list[str] | None = None
     tags: list[str] | None = None
     difficulty_levels: list[DifficultyLevel] | None = None
@@ -231,8 +252,8 @@ class BookUpdate(BaseModel):
     available_sizes: list[str] | None = None
     available_size_ranges: list[str] | None = None
     includes_patterns: bool | None = None
-    pattern_sheet_url: AnyHttpUrl | None = None
-    pattern_sheet_second_url: AnyHttpUrl | None = None
+    pattern_sheet_url: str | None = None
+    pattern_sheet_second_url: str | None = None
     status: DocumentStatus | None = None
     created_by: uuid.UUID | None = None
     validated_by: uuid.UUID | None = None
@@ -265,6 +286,17 @@ class BookUpdate(BaseModel):
         if not EAN_PATTERN.match(value) or not is_valid_ean(value):
             raise ValueError("EAN invalide")
         return normalize_ean(value)
+
+    @field_validator(
+        "cover_url",
+        "measurement_chart_url",
+        "pattern_sheet_url",
+        "pattern_sheet_second_url",
+        mode="before",
+    )
+    @classmethod
+    def normalize_media_urls(cls, value: object) -> str | None:
+        return normalize_media_url(value)
 
     @field_validator(
         "authors",

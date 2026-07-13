@@ -98,6 +98,22 @@ async def test_create_magazine_with_ean_and_issue_number(client: AsyncClient) ->
     assert created["isbn"] is None
 
 
+async def test_create_book_accepts_internal_media_urls(client: AsyncClient) -> None:
+    response = await client.post(
+        "/api/v1/books",
+        json={
+            **BOOK_PAYLOAD,
+            "cover_url": "/media/uploads/cover.webp",
+            "measurement_chart_url": "/media/uploads/measurements.webp",
+        },
+    )
+
+    assert response.status_code == 201
+    created = response.json()
+    assert created["cover_url"] == "/media/uploads/cover.webp"
+    assert created["measurement_chart_url"] == "/media/uploads/measurements.webp"
+
+
 async def test_create_magazine_with_patterns(client: AsyncClient) -> None:
     response = await client.post(
         "/api/v1/books",
@@ -154,6 +170,43 @@ async def test_create_magazine_with_patterns(client: AsyncClient) -> None:
 
     assert magazines_response.status_code == 200
     assert magazines_response.json()["items"][0]["id"] == created["id"]
+
+
+async def test_create_magazine_patterns_accept_internal_media_urls(
+    client: AsyncClient,
+) -> None:
+    response = await client.post(
+        "/api/v1/books",
+        json={
+            **MAGAZINE_PAYLOAD,
+            "ean": "9771234567027",
+            "issue_number": "Mai 2026",
+            "pattern_sheet_url": "/media/uploads/models.webp",
+            "magazine_patterns": [
+                {
+                    "model_name": "Robe chemise",
+                    "magazine_pattern_identifier": "18",
+                    "cover_url": "/media/uploads/pattern.webp",
+                    "second_cover_url": "/media/uploads/pattern-detail.webp",
+                    "difficulty_levels": ["beginner"],
+                    "target_audiences": ["women"],
+                    "main_categories": ["clothing"],
+                    "project_types": ["dress"],
+                    "available_sizes": [],
+                    "available_size_ranges": [],
+                }
+            ],
+        },
+    )
+
+    assert response.status_code == 201
+    created = response.json()
+    assert created["pattern_sheet_url"] == "/media/uploads/models.webp"
+    assert created["patterns"][0]["cover_url"] == "/media/uploads/pattern.webp"
+    assert (
+        created["patterns"][0]["second_cover_url"]
+        == "/media/uploads/pattern-detail.webp"
+    )
 
 
 async def test_search_magazines_by_french_pattern_project_type(client: AsyncClient) -> None:

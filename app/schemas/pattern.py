@@ -1,7 +1,7 @@
 import uuid
 from datetime import UTC, date, datetime
 
-from pydantic import AnyHttpUrl, BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from app.core.enums import (
     DifficultyLevel,
@@ -12,6 +12,7 @@ from app.core.enums import (
     TargetAudience,
 )
 from app.schemas.book import DocumentContributor
+from app.schemas.media_url import normalize_media_url
 
 
 class PatternBase(BaseModel):
@@ -19,9 +20,9 @@ class PatternBase(BaseModel):
     designer_name: str | None = Field(default=None, min_length=1, max_length=180)
     format: PatternFormat | None = None
     description: str | None = Field(default=None, max_length=2000)
-    cover_url: AnyHttpUrl | None = None
-    second_cover_url: AnyHttpUrl | None = None
-    measurement_chart_url: AnyHttpUrl | None = None
+    cover_url: str | None = None
+    second_cover_url: str | None = None
+    measurement_chart_url: str | None = None
     magazine_pattern_identifier: str | None = Field(default=None, max_length=80)
     source_magazine_id: uuid.UUID | None = None
     difficulty_levels: list[DifficultyLevel] = Field(default_factory=list)
@@ -40,6 +41,16 @@ class PatternBase(BaseModel):
     def normalize_size_lists(cls, values: list[str]) -> list[str]:
         cleaned = [value.strip() for value in values if value.strip()]
         return list(dict.fromkeys(cleaned))
+
+    @field_validator(
+        "cover_url",
+        "second_cover_url",
+        "measurement_chart_url",
+        mode="before",
+    )
+    @classmethod
+    def normalize_media_urls(cls, value: object) -> str | None:
+        return normalize_media_url(value)
 
     @field_validator("main_categories")
     @classmethod
@@ -81,9 +92,9 @@ class PatternUpdate(BaseModel):
     designer_name: str | None = Field(default=None, min_length=1, max_length=180)
     format: PatternFormat | None = None
     description: str | None = Field(default=None, max_length=2000)
-    cover_url: AnyHttpUrl | None = None
-    second_cover_url: AnyHttpUrl | None = None
-    measurement_chart_url: AnyHttpUrl | None = None
+    cover_url: str | None = None
+    second_cover_url: str | None = None
+    measurement_chart_url: str | None = None
     magazine_pattern_identifier: str | None = Field(default=None, max_length=80)
     source_magazine_id: uuid.UUID | None = None
     difficulty_levels: list[DifficultyLevel] | None = None
@@ -105,6 +116,16 @@ class PatternUpdate(BaseModel):
         if values is not None and MainCategory.TECHNIQUE in values:
             raise ValueError("La categorie technique n'est pas disponible pour les patrons")
         return values
+
+    @field_validator(
+        "cover_url",
+        "second_cover_url",
+        "measurement_chart_url",
+        mode="before",
+    )
+    @classmethod
+    def normalize_media_urls(cls, value: object) -> str | None:
+        return normalize_media_url(value)
 
     @field_validator("available_sizes", "available_size_ranges")
     @classmethod

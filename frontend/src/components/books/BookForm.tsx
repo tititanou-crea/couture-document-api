@@ -130,12 +130,34 @@ export function BookForm({ initialBook, documentType, submitLabel, onSubmit, onA
     !form.patternSheetUrl &&
     !form.patternSheetSecondUrl &&
     filledMagazinePatterns.some((pattern) => !pattern.coverUrl);
-  const canSave = form.title.trim().length > 0 && !missingRequiredPatternPhotos;
+  const hasDraftContent =
+    form.title.trim().length > 0 ||
+    form.subtitle.trim().length > 0 ||
+    form.authors.trim().length > 0 ||
+    form.publisher.trim().length > 0 ||
+    form.isbn.trim().length > 0 ||
+    form.ean.trim().length > 0 ||
+    form.issueNumber.trim().length > 0 ||
+    form.publicationYear.trim().length > 0 ||
+    form.pageCount.trim().length > 0 ||
+    form.description.trim().length > 0 ||
+    form.notes.trim().length > 0 ||
+    Boolean(form.coverUrl) ||
+    Boolean(form.measurementChartUrl) ||
+    Boolean(form.patternSheetUrl) ||
+    Boolean(form.patternSheetSecondUrl) ||
+    form.sizeEntries.trim().length > 0 ||
+    form.difficulty_levels.length > 0 ||
+    form.target_audiences.length > 0 ||
+    form.main_categories.length > 0 ||
+    form.project_types.length > 0 ||
+    form.techniques.length > 0 ||
+    filledMagazinePatterns.length > 0;
 
   useEffect(() => {
     if (!onAutoSave) return;
     const interval = window.setInterval(() => {
-      if (!canSave || autoSaving.current) return;
+      if (!hasDraftContent || autoSaving.current) return;
       const payload = buildPayload();
       const serialized = JSON.stringify(payload);
       if (serialized === lastAutoSavedPayload.current) return;
@@ -177,7 +199,7 @@ export function BookForm({ initialBook, documentType, submitLabel, onSubmit, onA
     ].filter(Boolean);
 
     return {
-      title: form.title.trim(),
+      title: form.title.trim() || null,
       document_type: form.documentType,
       subtitle: isMagazine ? null : form.subtitle.trim() || null,
       authors: isMagazine
@@ -318,7 +340,7 @@ export function BookForm({ initialBook, documentType, submitLabel, onSubmit, onA
         }
       >
         <div className="grid gap-4 md:grid-cols-3">
-          <TextField label={isMagazine ? "Nom du magazine" : "Titre du livre"} value={form.title} onChange={(event) => update("title", event.target.value)} required placeholder={isMagazine ? "Ex. Burda Style" : "Ex. Couture facile pour tous"} />
+          <TextField label={isMagazine ? "Nom du magazine" : "Titre du livre"} value={form.title} onChange={(event) => update("title", event.target.value)} placeholder={isMagazine ? "Ex. Burda Style" : "Ex. Couture facile pour tous"} />
           {!isMagazine ? <TextField label="Sous-titre" value={form.subtitle} onChange={(event) => update("subtitle", event.target.value)} placeholder="Ex. 20 projets pour débuter" /> : null}
           {!isMagazine ? <TextField label="Auteur(s)" value={form.authors} onChange={(event) => update("authors", event.target.value)} placeholder="Nom, Prénom" help="S’il y a plusieurs auteurs, séparez-les par une virgule." /> : null}
           {!isMagazine ? <TextField label="Maison d’édition" value={form.publisher} onChange={(event) => update("publisher", event.target.value)} placeholder="Ex. Eyrolles" /> : null}
@@ -567,7 +589,7 @@ export function BookForm({ initialBook, documentType, submitLabel, onSubmit, onA
       <div className="sticky bottom-20 z-10 rounded-lg border border-white/80 bg-white/90 p-4 shadow-soft backdrop-blur lg:bottom-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-base text-stone-600">Le document sera enregistré en brouillon. Vous pourrez le compléter ou le modifier ensuite.</p>
-          <Button type="submit" disabled={!canSave || saving} icon={<Save aria-hidden size={20} />}>
+          <Button type="submit" disabled={saving} icon={<Save aria-hidden size={20} />}>
             {saving ? "Enregistrement..." : submitLabel}
           </Button>
         </div>

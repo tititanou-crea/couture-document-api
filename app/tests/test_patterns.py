@@ -55,6 +55,24 @@ async def test_allow_incomplete_pattern_draft(client: AsyncClient) -> None:
     assert response.json()["status"] == "draft"
 
 
+async def test_create_pattern_accepts_internal_media_urls(client: AsyncClient) -> None:
+    response = await client.post(
+        "/api/v1/patterns",
+        json={
+            **PATTERN_PAYLOAD,
+            "cover_url": "/media/uploads/pattern.webp",
+            "second_cover_url": "/media/uploads/pattern-detail.webp",
+            "measurement_chart_url": "/media/uploads/measurements.webp",
+        },
+    )
+
+    assert response.status_code == 201
+    created = response.json()
+    assert created["cover_url"] == "/media/uploads/pattern.webp"
+    assert created["second_cover_url"] == "/media/uploads/pattern-detail.webp"
+    assert created["measurement_chart_url"] == "/media/uploads/measurements.webp"
+
+
 async def test_reject_incomplete_pattern_pending_validation(client: AsyncClient) -> None:
     response = await client.post(
         "/api/v1/patterns",

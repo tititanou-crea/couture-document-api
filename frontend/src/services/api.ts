@@ -143,7 +143,7 @@ async function performRequest<T>(
       clearToken();
     }
     const detail = body?.detail ?? body?.message ?? "Une erreur est survenue. Merci de réessayer.";
-    throw new Error(Array.isArray(detail) ? "Certaines informations sont à vérifier." : detail);
+    throw new Error(formatApiErrorDetail(detail));
   }
 
   return body as T;
@@ -161,6 +161,69 @@ function safeJsonParse(text: string) {
     return { message: text };
   }
 }
+
+type ApiValidationError = {
+  loc?: Array<string | number>;
+  msg?: string;
+};
+
+function formatApiErrorDetail(detail: unknown) {
+  if (!Array.isArray(detail)) {
+    return typeof detail === "string" ? detail : "Une erreur est survenue. Merci de réessayer.";
+  }
+
+  const messages = detail
+    .map((item) => {
+      if (!isValidationError(item)) return null;
+      const field = formatErrorLocation(item.loc);
+      return field ? `${field} : ${item.msg}` : item.msg;
+    })
+    .filter(Boolean);
+
+  return messages.length
+    ? `Informations à vérifier : ${messages.join(" ; ")}`
+    : "Certaines informations sont à vérifier.";
+}
+
+function isValidationError(value: unknown): value is ApiValidationError {
+  return Boolean(
+    value &&
+      typeof value === "object" &&
+      "msg" in value &&
+      typeof (value as ApiValidationError).msg === "string"
+  );
+}
+
+function formatErrorLocation(location: ApiValidationError["loc"]) {
+  if (!location?.length) return "";
+  const visibleParts = location.filter((part) => part !== "body");
+  return visibleParts.map(formatErrorLocationPart).join(" > ");
+}
+
+function formatErrorLocationPart(part: string | number) {
+  if (typeof part === "number") return String(part + 1);
+  return fieldLabels[part] ?? part;
+}
+
+const fieldLabels: Record<string, string> = {
+  available_size_ranges: "intervalles de tailles",
+  available_sizes: "tailles",
+  cover_url: "photo principale",
+  description: "description",
+  designer_name: "créateur / éditeur",
+  ean: "EAN",
+  format: "format",
+  isbn: "ISBN",
+  magazine_patterns: "patrons du magazine",
+  measurement_chart_url: "tableau des mensurations",
+  model_name: "nom du modèle",
+  page_count: "nombre de pages",
+  pattern_sheet_second_url: "deuxième photo de planche",
+  pattern_sheet_url: "photo de planche",
+  published_date: "année de publication",
+  second_cover_url: "deuxième photo",
+  title: "titre",
+};
 
 function isAbortError(error: unknown) {
   return (

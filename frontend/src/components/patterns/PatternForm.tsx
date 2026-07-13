@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Save } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { CheckboxGroup } from "@/components/ui/CheckboxGroup";
@@ -78,27 +78,25 @@ export function PatternForm({ initialPattern, submitLabel, onSubmit, onAutoSave 
   const isMagazinePattern = Boolean(initialPattern?.source_magazine);
   const sourceMagazineName = initialPattern?.source_magazine?.title ?? "";
 
-  const canSave = useMemo(
-    () =>
-      form.modelName.trim().length > 0 &&
-      (isMagazinePattern || form.designerName.trim().length > 0) &&
-      Boolean(form.format) &&
-      form.description.trim().length > 0 &&
-      Boolean(form.coverUrl),
-    [
-      form.coverUrl,
-      form.description,
-      form.designerName,
-      form.format,
-      form.modelName,
-      isMagazinePattern,
-    ]
-  );
+  const hasDraftContent =
+    form.modelName.trim().length > 0 ||
+    form.designerName.trim().length > 0 ||
+    Boolean(form.format) ||
+    form.description.trim().length > 0 ||
+    Boolean(form.coverUrl) ||
+    Boolean(form.secondCoverUrl) ||
+    Boolean(form.measurementChartUrl) ||
+    form.magazinePatternIdentifier.trim().length > 0 ||
+    form.sizeEntries.trim().length > 0 ||
+    form.difficulty_levels.length > 0 ||
+    form.target_audiences.length > 0 ||
+    form.main_categories.length > 0 ||
+    form.project_types.length > 0;
 
   useEffect(() => {
     if (!onAutoSave) return;
     const interval = window.setInterval(() => {
-      if (!canSave || autoSaving.current) return;
+      if (!hasDraftContent || autoSaving.current) return;
       const payload = buildPayload();
       const serialized = JSON.stringify(payload);
       if (serialized === lastAutoSavedPayload.current) return;
@@ -124,7 +122,7 @@ export function PatternForm({ initialPattern, submitLabel, onSubmit, onAutoSave 
 
   function buildPayload(): PatternPayload {
     return {
-      model_name: form.modelName.trim(),
+      model_name: form.modelName.trim() || null,
       designer_name: isMagazinePattern ? sourceMagazineName || null : form.designerName.trim() || null,
       format: form.format || null,
       description: form.description.trim() || null,
@@ -173,13 +171,13 @@ export function PatternForm({ initialPattern, submitLabel, onSubmit, onAutoSave 
         }
       >
         <div className="grid gap-4 md:grid-cols-2">
-          <TextField label="Nom du modèle" value={form.modelName} onChange={(event) => update("modelName", event.target.value)} required placeholder="Ex. Robe Magnolia" />
+          <TextField label="Nom du modèle" value={form.modelName} onChange={(event) => update("modelName", event.target.value)} placeholder="Ex. Robe Magnolia" />
           {!isMagazinePattern ? (
-            <TextField label="Créateur / éditeur" value={form.designerName} onChange={(event) => update("designerName", event.target.value)} required placeholder="Ex. Atelier Couture ou Burda Style" />
+            <TextField label="Créateur / éditeur" value={form.designerName} onChange={(event) => update("designerName", event.target.value)} placeholder="Ex. Atelier Couture ou Burda Style" />
           ) : null}
           <label>
             <span className="label">Format</span>
-            <select className="field" value={form.format} onChange={(event) => update("format", event.target.value as PatternFormState["format"])} required>
+            <select className="field" value={form.format} onChange={(event) => update("format", event.target.value as PatternFormState["format"])}>
               <option value="">Choisir un format</option>
               <option value="physical">Physique</option>
               <option value="digital">Numérique</option>
@@ -202,7 +200,7 @@ export function PatternForm({ initialPattern, submitLabel, onSubmit, onAutoSave 
           </div>
         ) : null}
         <div className="mt-4">
-          <TextArea label="Petite description" value={form.description} onChange={(event) => update("description", event.target.value)} required placeholder="Quelques phrases sur la coupe, le style ou les détails du patron." />
+          <TextArea label="Petite description" value={form.description} onChange={(event) => update("description", event.target.value)} placeholder="Quelques phrases sur la coupe, le style ou les détails du patron." />
         </div>
       </SectionCard>
 
@@ -250,7 +248,7 @@ export function PatternForm({ initialPattern, submitLabel, onSubmit, onAutoSave 
       <div className="sticky bottom-20 z-10 rounded-lg border border-white/80 bg-white/90 p-4 shadow-soft backdrop-blur lg:bottom-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-base text-stone-600">Le patron sera enregistré en brouillon. Vous pourrez le compléter ou le modifier ensuite.</p>
-          <Button type="submit" disabled={!canSave || saving} icon={<Save aria-hidden size={20} />}>
+          <Button type="submit" disabled={saving} icon={<Save aria-hidden size={20} />}>
             {saving ? "Enregistrement..." : submitLabel}
           </Button>
         </div>
