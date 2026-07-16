@@ -81,7 +81,7 @@ class BookService:
         book = Book(**values)
         try:
             created = await self.repository.create(book)
-            await self._create_magazine_patterns(created, payload.magazine_patterns)
+            await self._create_linked_patterns(created, payload.magazine_patterns)
             await self.session.refresh(created, ["patterns"])
             await self.session.commit()
             clear_metadata_lookup_cache()
@@ -111,7 +111,7 @@ class BookService:
 
         try:
             updated = await self.repository.update(book, values)
-            await self._create_magazine_patterns(updated, payload.magazine_patterns)
+            await self._create_linked_patterns(updated, payload.magazine_patterns)
             await self.session.refresh(updated, ["patterns"])
             await self.session.commit()
             clear_metadata_lookup_cache()
@@ -165,13 +165,16 @@ class BookService:
         merged.update(values)
         BookBase.model_validate(merged)
 
-    async def _create_magazine_patterns(
+    async def _create_linked_patterns(
         self, book: Book, pattern_payloads: list[MagazinePatternCreate]
     ) -> None:
-        if book.document_type != "magazine" or not pattern_payloads:
+        if (
+            book.document_type not in {DocumentType.BOOK, DocumentType.MAGAZINE}
+            or not pattern_payloads
+        ):
             return
 
-        fallback_designer = book.title or book.publisher
+        fallback_designer = ", ".join(book.authors) or book.title or book.publisher
         for pattern_payload in pattern_payloads:
             pattern_values = pattern_payload.model_dump()
             for url_field in ("cover_url", "second_cover_url", "measurement_chart_url"):

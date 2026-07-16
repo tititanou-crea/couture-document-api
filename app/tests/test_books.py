@@ -172,6 +172,52 @@ async def test_create_magazine_with_patterns(client: AsyncClient) -> None:
     assert magazines_response.json()["items"][0]["id"] == created["id"]
 
 
+async def test_create_book_with_patterns(client: AsyncClient) -> None:
+    response = await client.post(
+        "/api/v1/books",
+        json={
+            **BOOK_PAYLOAD,
+            "pattern_sheet_url": "https://example.com/covers/couture-pratique-models.jpg",
+            "magazine_patterns": [
+                {
+                    "model_name": "Robe portefeuille",
+                    "magazine_pattern_identifier": "modele 8",
+                    "description": "Une robe portefeuille issue du livre.",
+                    "difficulty_levels": ["intermediate"],
+                    "target_audiences": ["women"],
+                    "main_categories": ["clothing"],
+                    "project_types": ["dress"],
+                    "available_sizes": ["38", "40"],
+                    "available_size_ranges": ["38-44"],
+                }
+            ],
+        },
+    )
+
+    assert response.status_code == 201
+    created = response.json()
+    assert created["document_type"] == "book"
+    assert (
+        created["pattern_sheet_url"]
+        == "https://example.com/covers/couture-pratique-models.jpg"
+    )
+    assert len(created["patterns"]) == 1
+    assert created["patterns"][0]["model_name"] == "Robe portefeuille"
+    assert created["patterns"][0]["magazine_pattern_identifier"] == "modele 8"
+
+    patterns_response = await client.get("/api/v1/patterns/search?q=Robe")
+
+    assert patterns_response.status_code == 200
+    pattern = patterns_response.json()["items"][0]
+    assert pattern["source_magazine"]["id"] == created["id"]
+    assert pattern["designer_name"] == BOOK_PAYLOAD["authors"][0]
+
+    books_response = await client.get("/api/v1/books/search?q=portefeuille")
+
+    assert books_response.status_code == 200
+    assert books_response.json()["items"][0]["id"] == created["id"]
+
+
 async def test_create_magazine_patterns_accept_internal_media_urls(
     client: AsyncClient,
 ) -> None:

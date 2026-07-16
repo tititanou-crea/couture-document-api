@@ -96,7 +96,7 @@ export function PatternCard({ pattern, onDelete }: PatternCardProps) {
           {pattern.source_magazine ? (
             <Link prefetch={false} href={`/books/${pattern.source_magazine.id}`} className="mt-4 inline-flex items-center gap-2 rounded-md bg-linen px-3 py-2 text-sm font-bold text-rosewood hover:bg-cream">
               <BookOpen aria-hidden size={16} />
-              {pattern.source_magazine.title || "Magazine source"}
+              {pattern.source_magazine.title || "Document source"}
               {pattern.source_magazine.issue_number ? ` - ${pattern.source_magazine.issue_number}` : ""}
             </Link>
           ) : null}

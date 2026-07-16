@@ -127,7 +127,7 @@ export default function PatternDetailsPage() {
                 <DetailSection title="Informations générales">
                   <dl className="grid gap-x-8 gap-y-5 sm:grid-cols-2">
                     <Detail label="Format" value={pattern.format ? formatLabels[pattern.format] : null} />
-                    <Detail label="Repère dans le magazine" value={pattern.magazine_pattern_identifier} />
+                    <Detail label="Repère dans le document" value={pattern.magazine_pattern_identifier} />
                   </dl>
                 </DetailSection>
 
@@ -145,7 +145,7 @@ export default function PatternDetailsPage() {
                 </DetailSection>
 
                 {pattern.source_magazine ? (
-                  <DetailSection title="Magazine source">
+                  <DetailSection title="Document source">
                     <Link
                       href={`/books/${pattern.source_magazine.id}`}
                       className="flex items-center gap-3 rounded-lg border border-rosewood/10 bg-linen p-4 transition hover:border-rosewood/30"
@@ -153,7 +153,7 @@ export default function PatternDetailsPage() {
                       <BookOpen className="shrink-0 text-rosewood" aria-hidden size={22} />
                       <span>
                         <span className="block font-semibold text-ink">
-                          {pattern.source_magazine.title || "Magazine sans nom"}
+                          {pattern.source_magazine.title || "Document sans nom"}
                         </span>
                         {pattern.source_magazine.issue_number ? (
                           <span className="text-sm text-stone-600">Numéro {pattern.source_magazine.issue_number}</span>

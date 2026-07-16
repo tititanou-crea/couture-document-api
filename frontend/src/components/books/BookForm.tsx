@@ -121,12 +121,12 @@ export function BookForm({ initialBook, documentType, submitLabel, onSubmit, onA
   const autoSaving = useRef(false);
 
   const isMagazine = form.documentType === "magazine";
+  const hasLinkedPatternSection = form.includesPatterns === "yes";
   const filledMagazinePatterns = form.magazinePatterns.filter(
     (pattern) => pattern.modelName.trim() || pattern.identifier.trim()
   );
   const missingRequiredPatternPhotos =
-    isMagazine &&
-    form.includesPatterns === "yes" &&
+    hasLinkedPatternSection &&
     !form.patternSheetUrl &&
     !form.patternSheetSecondUrl &&
     filledMagazinePatterns.some((pattern) => !pattern.coverUrl);
@@ -217,8 +217,8 @@ export function BookForm({ initialBook, documentType, submitLabel, onSubmit, onA
       language: "fr",
       cover_url: form.coverUrl,
       measurement_chart_url: form.measurementChartUrl,
-      pattern_sheet_url: isMagazine ? form.patternSheetUrl : null,
-      pattern_sheet_second_url: isMagazine ? form.patternSheetSecondUrl : null,
+      pattern_sheet_url: hasLinkedPatternSection ? form.patternSheetUrl : null,
+      pattern_sheet_second_url: hasLinkedPatternSection ? form.patternSheetSecondUrl : null,
       description: isMagazine
         ? null
         : form.description.trim()
@@ -236,12 +236,16 @@ export function BookForm({ initialBook, documentType, submitLabel, onSubmit, onA
       includes_patterns:
         form.includesPatterns === "unknown" ? null : form.includesPatterns === "yes",
       magazine_patterns:
-        isMagazine && form.includesPatterns === "yes"
+        hasLinkedPatternSection
           ? form.magazinePatterns
               .filter((pattern) => pattern.modelName.trim() || pattern.identifier.trim())
               .map((pattern) => ({
                 model_name: pattern.modelName.trim() || null,
-                designer_name: form.title.trim() || null,
+                designer_name:
+                  (isMagazine ? form.title : form.authors.split(",")[0]).trim() ||
+                  form.publisher.trim() ||
+                  form.title.trim() ||
+                  null,
                 format: pattern.format,
                 description: pattern.description.trim() || null,
                 cover_url:
@@ -441,8 +445,15 @@ export function BookForm({ initialBook, documentType, submitLabel, onSubmit, onA
         <CoverUpload value={form.measurementChartUrl} onChange={(url) => update("measurementChartUrl", url)} />
       </SectionCard>
 
-      {isMagazine && form.includesPatterns === "yes" ? (
-        <SectionCard title="5. Patrons du magazine" description="Ajoutez une planche globale si le magazine en propose une, puis créez les patrons du numéro depuis cette même page.">
+      {hasLinkedPatternSection ? (
+        <SectionCard
+          title={isMagazine ? "5. Patrons du magazine" : "6. Patrons du livre"}
+          description={
+            isMagazine
+              ? "Ajoutez une planche globale si le magazine en propose une, puis créez les patrons du numéro depuis cette même page."
+              : "Ajoutez une planche globale si le livre en propose une, puis créez les patrons du livre depuis cette même page."
+          }
+        >
           <div className="space-y-5">
             <div>
               <p className="label">Photos de la planche des modèles (facultatif)</p>
@@ -463,7 +474,7 @@ export function BookForm({ initialBook, documentType, submitLabel, onSubmit, onA
                 </div>
               </div>
               <p className="mt-2 text-sm text-stone-500">
-                Pour une planche sur double page, ajoutez une photo de chaque page. Si le magazine
+                Pour une planche sur double page, ajoutez une photo de chaque page. Si le document
                 n’a pas de planche globale, ajoutez une photo pour chaque patron ci-dessous.
               </p>
             </div>
@@ -471,7 +482,7 @@ export function BookForm({ initialBook, documentType, submitLabel, onSubmit, onA
             <div className="space-y-4">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <p className="text-base text-stone-600">
-                  Chaque patron créé ici sera relié à ce magazine et pourra être retrouvé dans la liste des patrons.
+                  Chaque patron créé ici sera relié à ce document et pourra être retrouvé dans la liste des patrons.
                 </p>
                 <Button type="button" variant="secondary" icon={<PlusCircle aria-hidden size={20} />} onClick={addMagazinePattern}>
                   Ajouter un patron
@@ -480,7 +491,7 @@ export function BookForm({ initialBook, documentType, submitLabel, onSubmit, onA
 
               {form.magazinePatterns.length === 0 ? (
                 <div className="rounded-lg border border-dashed border-rosewood/20 bg-cream p-5 text-base text-stone-600">
-                  Ajoutez au moins un patron si le magazine contient des modèles à coudre.
+                  Ajoutez au moins un patron si ce document contient des modèles à coudre.
                 </div>
               ) : null}
 
@@ -495,7 +506,7 @@ export function BookForm({ initialBook, documentType, submitLabel, onSubmit, onA
 
                   <div className="grid gap-4 md:grid-cols-3">
                     <TextField label="Nom descriptif" value={pattern.modelName} onChange={(event) => updateMagazinePattern(pattern.id, "modelName", event.target.value)} placeholder="Ex. Jupe en jean" />
-                    <TextField label="Repère sur la planche" value={pattern.identifier} onChange={(event) => updateMagazinePattern(pattern.id, "identifier", event.target.value)} placeholder="Ex. M1, 12A, modèle 104" />
+                    <TextField label="Repère sur la planche" value={pattern.identifier} onChange={(event) => updateMagazinePattern(pattern.id, "identifier", event.target.value)} placeholder={isMagazine ? "Ex. M1, 12A, modèle 104" : "Ex. modèle 12, p. 42"} />
                     <TextField
                       label="Tailles ou intervalles"
                       value={pattern.sizeEntries}
@@ -565,7 +576,7 @@ export function BookForm({ initialBook, documentType, submitLabel, onSubmit, onA
                   </div>
                   <p className="mt-2 text-sm text-stone-500">
                     {form.patternSheetUrl || form.patternSheetSecondUrl
-                      ? "Sans photo principale séparée, la planche du magazine sera utilisée."
+                      ? "Sans photo principale séparée, la planche du document sera utilisée."
                       : "Sans planche globale, la photo principale sert à identifier le patron."}
                   </p>
                 </div>
