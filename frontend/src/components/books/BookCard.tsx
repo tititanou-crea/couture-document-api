@@ -85,15 +85,17 @@ export function BookCard({ book, onDelete }: BookCardProps) {
             </p>
           ) : null}
 
-          {book.document_type === "magazine" && book.patterns?.length ? (
+          {book.patterns?.length ? (
             <div className="mt-4 rounded-lg bg-linen p-3">
               <p className="mb-2 flex items-center gap-2 text-sm font-bold text-rosewood">
                 <Shirt aria-hidden size={16} />
-                Patrons dans ce magazine
+                {book.document_type === "magazine"
+                  ? "Patrons dans ce magazine"
+                  : "Patrons dans ce livre"}
               </p>
               <div className="flex flex-wrap gap-2">
                 {book.patterns.map((pattern) => (
-                  <Link prefetch={false} key={pattern.id} href={`/patterns/${pattern.id}/edit`} className="rounded-full bg-white px-3 py-1 text-sm font-semibold text-ink ring-1 ring-rosewood/10 hover:text-rosewood">
+                  <Link prefetch={false} key={pattern.id} href={`/patterns/${pattern.id}`} className="rounded-full bg-white px-3 py-1 text-sm font-semibold text-ink ring-1 ring-rosewood/10 hover:text-rosewood">
                     {pattern.magazine_pattern_identifier ? `${pattern.magazine_pattern_identifier} - ` : ""}
                     {pattern.model_name || "Patron sans nom"}
                   </Link>

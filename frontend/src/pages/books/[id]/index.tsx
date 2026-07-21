@@ -148,8 +148,8 @@ export default function BookDetailsPage() {
                   <TagGroup label="Mots-clés" values={book.tags} translate={false} />
                 </DetailSection>
 
-                {isMagazine && book.patterns?.length ? (
-                  <DetailSection title="Patrons de ce magazine">
+                {book.patterns?.length ? (
+                  <DetailSection title={isMagazine ? "Patrons de ce magazine" : "Patrons de ce livre"}>
                     <div className="grid gap-3 sm:grid-cols-2">
                       {book.patterns.map((pattern) => (
                         <Link
