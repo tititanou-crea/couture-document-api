@@ -136,13 +136,17 @@ async function performRequest<T>(
   }
 
   const text = await response.text();
-  const body = text ? safeJsonParse(text) : null;
+  const contentType = response.headers.get("Content-Type") ?? "";
+  const body = text ? safeJsonParse(text, contentType) : null;
 
   if (!response.ok) {
     if (response.status === 401) {
       clearToken();
     }
-    const detail = body?.detail ?? body?.message ?? "Une erreur est survenue. Merci de réessayer.";
+    const detail =
+      body?.detail ??
+      body?.message ??
+      messageForHttpStatus(response.status);
     throw new Error(formatApiErrorDetail(detail));
   }
 
@@ -154,12 +158,40 @@ function clearRequestCache() {
   pendingRequests.clear();
 }
 
-function safeJsonParse(text: string) {
+function safeJsonParse(text: string, contentType: string) {
+  if (isHtmlResponse(text, contentType)) {
+    return null;
+  }
+
   try {
     return JSON.parse(text);
   } catch {
-    return { message: text };
+    return { message: text.length > 500 ? null : text };
   }
+}
+
+function isHtmlResponse(text: string, contentType: string) {
+  return (
+    contentType.toLowerCase().includes("text/html") ||
+    /^\s*<!doctype html/i.test(text) ||
+    /^\s*<html[\s>]/i.test(text)
+  );
+}
+
+function messageForHttpStatus(status: number) {
+  if (status === 502 || status === 503 || status === 504) {
+    return "Le serveur est temporairement indisponible. Réessayez dans quelques instants.";
+  }
+  if (status === 401) {
+    return "Votre session a expiré. Merci de vous reconnecter.";
+  }
+  if (status === 403) {
+    return "Vous n’avez pas l’autorisation d’effectuer cette action.";
+  }
+  if (status === 404) {
+    return "L’élément demandé est introuvable.";
+  }
+  return "Une erreur est survenue. Merci de réessayer.";
 }
 
 type ApiValidationError = {
@@ -249,13 +281,6 @@ function normalizeApiUrl(value: string) {
 
   try {
     const url = new URL(trimmed);
-    if (
-      typeof window !== "undefined" &&
-      window.location.hostname.endsWith(".vercel.app") &&
-      url.hostname.endsWith(".onrender.com")
-    ) {
-      return "/api/v1";
-    }
     if (url.hostname.endsWith(".onrender.com") && url.protocol === "http:") {
       url.protocol = "https:";
     }
